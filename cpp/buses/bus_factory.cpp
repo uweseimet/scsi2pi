@@ -9,6 +9,7 @@
 #include "bus_factory.h"
 #include <spdlog/spdlog.h>
 #if __has_include (<linux/gpio.h>)
+#include "pi5_bus.h"
 #include "rpi_bus.h"
 #endif
 #include "virtual_bus.h"
@@ -33,6 +34,10 @@ unique_ptr<Bus> BusFactory::CreateBus(bool target, const string &identifier,
 #else
             false;
 #endif
+
+        if (pi_type == RpiBus::PiType::PI_5) {
+            return make_initialized(make_unique<Pi5Bus>(override_standard_board || standard_board));
+        }
 
         auto bus = make_unique<RpiBus>(pi_type, override_standard_board || standard_board, enable_irq);
         return make_initialized(std::move(bus));

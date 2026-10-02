@@ -250,6 +250,7 @@ SRC_BUSES := $(DIR_BUSES)/bus.cpp \
 	$(DIR_BUSES)/virtual_bus.cpp
 ifdef IS_LINUX
 SRC_BUSES += $(DIR_BUSES)/rpi_bus.cpp \
+	$(DIR_BUSES)/pi5_bus.cpp \
 	$(DIR_BUSES)/rp1_pio.cpp
 endif
 

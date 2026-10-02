@@ -14,7 +14,7 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
-#include "rpi_bus.h"
+#include "pi5_bus.h"
 
 // The kernel interface of the rp1-pio driver, provided by the linux-libc-dev package of Raspberry Pi OS
 #if __has_include(<misc/rp1_pio_if.h>)
@@ -82,10 +82,9 @@ Rp1Pio::~Rp1Pio()
     }
 }
 
-string Rp1Pio::Init(volatile uint32_t *io, const volatile uint32_t *l)
+string Rp1Pio::Init(span<volatile uint32_t> g)
 {
-    io_bank = io;
-    level = l;
+    gpio = g;
 
     fd = open("/dev/pio0", O_RDWR | O_CLOEXEC);
     if (fd == -1) {
@@ -104,8 +103,11 @@ string Rp1Pio::Init(volatile uint32_t *io, const volatile uint32_t *l)
     ranges::copy(RECEIVE_PROGRAM, receive.instrs);
     rp1_pio_add_program_args send = { .num_instrs = SEND_PROGRAM.size(), .origin = RP1_PIO_ORIGIN_ANY, .instrs = { } };
     ranges::copy(SEND_PROGRAM, send.instrs);
-    int offset = -1;
-    if (ioctl(fd, PIO_IOC_ADD_PROGRAM, &receive) != 0 || (offset = ioctl(fd, PIO_IOC_ADD_PROGRAM, &send)) < 0) {
+    if (ioctl(fd, PIO_IOC_ADD_PROGRAM, &receive) != 0) {
+        return "Can't load the PIO programs: "s + system_error(errno, generic_category()).what();
+    }
+    const int offset = ioctl(fd, PIO_IOC_ADD_PROGRAM, &send);
+    if (offset < 0) {
         return "Can't load the PIO programs: "s + system_error(errno, generic_category()).what();
     }
     send_offset = static_cast<uint16_t>(offset);
@@ -122,13 +124,12 @@ string Rp1Pio::Init(volatile uint32_t *io, const volatile uint32_t *l)
     return "";
 }
 
-int Rp1Pio::Send(span<const uint32_t> data)
+int Rp1Pio::Send(span<uint32_t> data)
 {
     Start();
 
     // One word per byte
-    auto *words_out = const_cast<uint32_t*>(data.data()); // NOSONAR The driver does not write to the data
-    const size_t sent = Transfer(RP1_PIO_DIR_TO_SM, words_out, data.size_bytes()) / sizeof(uint32_t);
+    const size_t sent = Transfer(RP1_PIO_DIR_TO_SM, as_writable_bytes(data)) / sizeof(uint32_t);
 
     // The DMA transfer has finished, but the last bytes may still be in the FIFO
     const bool success = sent == data.size() && WaitForCompletion(true);
@@ -150,7 +151,7 @@ int Rp1Pio::Receive(data_in_t buf)
 
     // Four bytes per word
     words.resize(buf.size() / 4);
-    const size_t received = Transfer(RP1_PIO_DIR_FROM_SM, words.data(), buf.size()) / sizeof(uint32_t);
+    const size_t received = Transfer(RP1_PIO_DIR_FROM_SM, as_writable_bytes(span(words))) / sizeof(uint32_t);
 
     const bool success = received == words.size() && WaitForCompletion(false);
 
@@ -173,13 +174,13 @@ bool Rp1Pio::Ioctl(unsigned long request, void *args) const
 }
 
 // Returns the number of bytes transferred
-size_t Rp1Pio::Transfer(uint16_t dir, void *data, size_t bytes)
+size_t Rp1Pio::Transfer(uint16_t dir, span<byte> data)
 {
     size_t transferred = 0;
-    while (transferred < bytes) {
-        const size_t count = min(bytes - transferred, MAX_TRANSFER_BYTES);
+    while (transferred < data.size()) {
+        const size_t count = min(data.size() - transferred, MAX_TRANSFER_BYTES);
         rp1_pio_sm_xfer_data_args xfer = { .sm = sm, .dir = dir, .data_bytes = static_cast<uint16_t>(count), .data =
-            static_cast<uint8_t*>(data) + transferred };
+            data.subspan(transferred).data() };
         if (!Ioctl(PIO_IOC_SM_XFER_DATA, &xfer)) {
             Abort(dir);
             break;
@@ -193,7 +194,7 @@ size_t Rp1Pio::Transfer(uint16_t dir, void *data, size_t bytes)
 // Hand the pins over to the PIO and start the state machine
 void Rp1Pio::Start() const
 {
-    SetPinFunction(RP1_GPIO_FUNC_PIO);
+    SetPinFunction(Pi5Bus::FUNCSEL_PIO);
     rp1_pio_sm_set_enabled_args enable = { .mask = static_cast<uint16_t>(1U << sm), .enable = 1, .rsvd = 0 };
     Ioctl(PIO_IOC_SM_SET_ENABLED, &enable);
 }
@@ -204,7 +205,7 @@ void Rp1Pio::SetUpStateMachine(bool receive)
     rp1_pio_sm_set_enabled_args disable = { .mask = static_cast<uint16_t>(1U << sm), .enable = 0, .rsvd = 0 };
     Ioctl(PIO_IOC_SM_SET_ENABLED, &disable);
 
-    SetPinFunction(RpiBus::RP1_FUNCSEL_SYS_RIO);
+    SetPinFunction(Pi5Bus::FUNCSEL_SYS_RIO);
 
     const uint16_t start = receive ? 0 : send_offset;
     const uint16_t end = start + static_cast<uint16_t>(receive ? RECEIVE_PROGRAM.size() : SEND_PROGRAM.size()) - 1;
@@ -232,10 +233,12 @@ void Rp1Pio::SetUpStateMachine(bool receive)
 // Switch the data pins and REQ between PIO and software control
 void Rp1Pio::SetPinFunction(uint32_t function) const
 {
-    for (int pin = PIN_DT0; pin < PIN_DT0 + DATA_PIN_COUNT; ++pin) {
-        io_bank[pin * 2 + 1] = (io_bank[pin * 2 + 1] & ~RpiBus::RP1_FUNCSEL_MASK) | function;
+    for (int pin = PIN_DT0; pin <= PIN_REQ; ++pin) {
+        if (PIN_MASK & 1U << pin) {
+            const int reg = Pi5Bus::GetControlRegister(pin);
+            gpio[reg] = (gpio[reg] & ~Pi5Bus::FUNCSEL_MASK) | function;
+        }
     }
-    io_bank[PIN_REQ * 2 + 1] = (io_bank[PIN_REQ * 2 + 1] & ~RpiBus::RP1_FUNCSEL_MASK) | function;
 }
 
 // Wait for the handshake of the last byte, i.e. until REQ and ACK have been released for several consecutive reads
@@ -254,7 +257,7 @@ bool Rp1Pio::WaitForCompletion(bool check_fifo) const
         }
 
         // Signals are active low
-        const uint32_t signals = *level;
+        const uint32_t signals = gpio[Pi5Bus::RIO_OFFSET + Pi5Bus::RIO_SYNC_IN];
         if (fifo.empty && (signals & (1U << PIN_REQ)) && (signals & (1U << PIN_ACK))) {
             ++idle_count;
         }
@@ -280,12 +283,12 @@ void Rp1Pio::Abort(uint16_t dir)
 
 Rp1Pio::~Rp1Pio() = default;
 
-string Rp1Pio::Init(volatile uint32_t*, const volatile uint32_t*)
+string Rp1Pio::Init(span<volatile uint32_t>)
 {
     return "This build does not support the RP1 PIO";
 }
 
-int Rp1Pio::Send(span<const uint32_t>)
+int Rp1Pio::Send(span<uint32_t>)
 {
     return 0;
 }

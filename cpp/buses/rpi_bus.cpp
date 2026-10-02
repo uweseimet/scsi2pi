@@ -8,7 +8,6 @@
 //---------------------------------------------------------------------------
 
 #include "rpi_bus.h"
-#include <algorithm>
 #include <bit>
 #include <cstddef>
 #include <fstream>
@@ -26,8 +25,7 @@ using namespace spdlog;
 using namespace s2p_util;
 using namespace scsi_util;
 
-// The Pi 5 cannot disable interrupts, it always relies on real-time scheduling instead
-RpiBus::RpiBus(PiType type, bool standard_board, bool e) : pi_type(type), enable_irq(e || type == PiType::PI_5)
+RpiBus::RpiBus(PiType type, bool standard_board, bool e) : pi_type(type), enable_irq(e)
 {
     if (standard_board) {
         pin_ind = -1;
@@ -36,11 +34,28 @@ RpiBus::RpiBus(PiType type, bool standard_board, bool e) : pi_type(type), enable
     }
 }
 
-string RpiBus::MapBcmRegisters()
+string RpiBus::SetUp(bool target)
 {
+    if (pin_ind < 0 && !target) {
+        return "Initiator mode requires a FULLSPEC board";
+    }
+
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd == -1) {
         return "Root permissions are required";
+    }
+
+    if (const unsigned int cores = thread::hardware_concurrency(); cores > 3) {
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);
+        CPU_SET(3, &cpuset);
+        pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+    }
+
+    if (enable_irq) {
+        sched_param param { };
+        param.sched_priority = 99;
+        pthread_setschedparam(pthread_self(), SCHED_FIFO, &param);
     }
 
     off_t base_addr = 0;
@@ -131,59 +146,6 @@ string RpiBus::MapBcmRegisters()
 
     close(fd);
 
-    return "";
-}
-
-// On the Pi 5 the GPIO pins are connected to the RP1 chip, /dev/gpiomem0 maps its IO_BANK0, SYS_RIO0 and PADS_BANK0
-string RpiBus::MapRp1Registers()
-{
-    const int fd = open("/dev/gpiomem0", O_RDWR | O_SYNC);
-    if (fd == -1) {
-        return "Can't open /dev/gpiomem0: "s + system_error(errno, generic_category()).what();
-    }
-
-    void *map = mmap(nullptr, RP1_MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    close(fd);
-    if (map == MAP_FAILED) {
-        return "Can't map RP1 GPIO: "s + system_error(errno, generic_category()).what();
-    }
-
-    rp1_io = static_cast<uint32_t*>(map);
-    rp1_rio = rp1_io + RP1_RIO_OFFSET;
-    rp1_pads = rp1_io + RP1_PADS_OFFSET;
-    level = &rp1_rio[RP1_RIO_SYNC_IN];
-
-    // Hand all pins over to software control, some of them default to other functions, e.g. SPI0 and UART0
-    for (int pin = PIN_ACT; pin <= PIN_SEL; ++pin) {
-        rp1_io[pin * 2 + 1] = (rp1_io[pin * 2 + 1] & ~RP1_FUNCSEL_MASK) | RP1_FUNCSEL_SYS_RIO;
-    }
-
-    return "";
-}
-
-string RpiBus::SetUp(bool target)
-{
-    if (pin_ind < 0 && !target) {
-        return "Initiator mode requires a FULLSPEC board";
-    }
-
-    if (const unsigned int cores = thread::hardware_concurrency(); cores > 3) {
-        cpu_set_t cpuset;
-        CPU_ZERO(&cpuset);
-        CPU_SET(3, &cpuset);
-        pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
-    }
-
-    if (enable_irq) {
-        sched_param param { };
-        param.sched_priority = 99;
-        pthread_setschedparam(pthread_self(), SCHED_FIFO, &param);
-    }
-
-    if (const string &error = pi_type == PiType::PI_5 ? MapRp1Registers() : MapBcmRegisters(); !error.empty()) {
-        return error;
-    }
-
     // Set Drive Strength to 16mA
     SetSignalDriveStrength(7);
 
@@ -203,14 +165,12 @@ string RpiBus::SetUp(bool target)
     PinConfig(PIN_ENB, GPIO_OUTPUT);
 
     // GPIO Function Select (GPFSEL) registers copy
-    if (pi_type != PiType::PI_5) {
-        gpfsel[GPIO_FSEL_0] = gpio[GPIO_FSEL_0];
-        gpfsel[GPIO_FSEL_1] = gpio[GPIO_FSEL_1];
-        gpfsel[GPIO_FSEL_2] = gpio[GPIO_FSEL_2];
-    }
+    gpfsel[GPIO_FSEL_0] = gpio[GPIO_FSEL_0];
+    gpfsel[GPIO_FSEL_1] = gpio[GPIO_FSEL_1];
+    gpfsel[GPIO_FSEL_2] = gpio[GPIO_FSEL_2];
 
     // Initialize SEL signal interrupt
-    const int fd = open("/dev/gpiochip0", 0);
+    fd = open("/dev/gpiochip0", 0);
     if (fd == -1) {
         return "Can't open /dev/gpiochip0. If s2p is running (e.g. as a service), shut it down first.";
     }
@@ -244,14 +204,6 @@ string RpiBus::SetUp(bool target)
     }
 
     CreateWorkTable();
-
-    if (pi_type == PiType::PI_5) {
-        pio = make_unique<Rp1Pio>();
-        if (const string &error = pio->Init(rp1_io, level); !error.empty()) {
-            warn("{}, using slower software handshakes", error);
-            pio.reset();
-        }
-    }
 
     // Set the initiator signal direction
     PinSetSignal(pin_ind, !target);
@@ -356,51 +308,8 @@ void RpiBus::SetDataDirIn(bool in) const
     }
 }
 
-int RpiBus::TargetSendHandShake(data_out_t buf, int daynaport_delay_after_bytes)
-{
-    if (!pio || buf.size() < MIN_PIO_BYTES || daynaport_delay_after_bytes != SEND_NO_DELAY) {
-        return Bus::TargetSendHandShake(buf, daynaport_delay_after_bytes);
-    }
-
-    // Keep the previous byte on the bus until the initiator has released ACK
-    if (!WaitHandShake(PIN_ACK_MASK, false)) {
-        return 0;
-    }
-
-    pio_words.resize(buf.size());
-    ranges::transform(buf, pio_words.begin(), [this](uint8_t b) { return tblDatSet[b] >> PIN_DT0; });
-
-    // From here on the PIO drives the data pins
-    SetRp1OutputEnable(RP1_DATA_MASK, false);
-
-    return pio->Send(pio_words);
-}
-
-int RpiBus::TargetReceiveHandShake(data_in_t buf)
-{
-    if (!pio || buf.size() < MIN_PIO_BYTES || buf.size() % 4) {
-        return Bus::TargetReceiveHandShake(buf);
-    }
-
-    if (!WaitHandShake(PIN_ACK_MASK, false)) {
-        return 0;
-    }
-
-    // The data pins are inputs during DATA OUT
-    SetRp1OutputEnable(RP1_DATA_MASK, false);
-
-    return pio->Receive(buf);
-}
-
 void RpiBus::SetDAT(uint8_t dat) const
 {
-    if (pi_type == PiType::PI_5) {
-        // Change all data pins with a single atomic XOR of their output enable bits
-        rp1_rio[RP1_XOR + RP1_RIO_OE] = rp1_data_oe ^ tblDatSet[dat];
-        rp1_data_oe = tblDatSet[dat];
-        return;
-    }
-
     // Mask for the DT0-DT7 and DP pins
     uint32_t fsel = gpfsel[GPIO_FSEL_1] & DATA_MASK;
     fsel |= tblDatSet[dat];
@@ -426,8 +335,8 @@ void RpiBus::CreateWorkTable()
 
         uint32_t dat_set = 0;
         for (const int pin : DATA_PINS) {
-            // Offset of the Function Select register for this pin (3 bits per pin), Pi 5: output enable bit of this pin
-            const int shift = pi_type == PiType::PI_5 ? pin : (pin % 10) * 3;
+            // Offset of the Function Select register for this pin (3 bits per pin)
+            const int shift = (pin % 10) * 3;
             // Value (GPIO pin is set to 1)
             dat_set |= (bits & 1) << shift;
             bits >>= 1;
@@ -439,11 +348,6 @@ void RpiBus::CreateWorkTable()
 
 void RpiBus::SetSignal(int pin, bool state) const
 {
-    if (pi_type == PiType::PI_5) {
-        SetRp1OutputEnable(1U << pin, state);
-        return;
-    }
-
     const int index = pin / 10;
     assert(index <= 2);
     const int shift = (pin % 10) * 3;
@@ -531,11 +435,6 @@ void RpiBus::PinConfig(int pin, int mode) const
         return;
     }
 
-    if (pi_type == PiType::PI_5) {
-        SetRp1OutputEnable(1U << pin, mode == GPIO_OUTPUT);
-        return;
-    }
-
     const int index = pin / 10;
     const uint32_t mask = ~(0b111U << ((pin % 10) * 3));
     gpfsel[index] = (gpio[index] & mask) | ((mode & 0b111) << ((pin % 10) * 3));
@@ -549,24 +448,7 @@ void RpiBus::PinSetSignal(int pin, bool state) const
         return;
     }
 
-    if (pi_type == PiType::PI_5) {
-        rp1_rio[(state ? RP1_SET : RP1_CLR) + RP1_RIO_OUT] = 1U << pin;
-        return;
-    }
-
     gpio[state ? GPIO_SET_0 : GPIO_CLR_0] = 1U << pin;
-}
-
-void RpiBus::SetRp1OutputEnable(uint32_t mask, bool enable) const
-{
-    rp1_rio[(enable ? RP1_SET : RP1_CLR) + RP1_RIO_OE] = mask;
-
-    if (enable) {
-        rp1_data_oe |= mask & RP1_DATA_MASK;
-    }
-    else {
-        rp1_data_oe &= ~mask;
-    }
 }
 
 void RpiBus::DisablePulls(int pin) const
@@ -574,10 +456,7 @@ void RpiBus::DisablePulls(int pin) const
     assert(pin >= 0);
 
     pin &= 0x1f;
-    if (pi_type == PiType::PI_5) {
-        rp1_pads[1 + pin] = rp1_pads[1 + pin] & ~RP1_PAD_PULL_MASK;
-    }
-    else if (pi_type == PiType::PI_4) {
+    if (pi_type == PiType::PI_4) {
         const int shift = pin << 1;
         uint32_t bits = gpio[GPIO_PUPPDN0 + (pin >> 4)];
         bits &= ~(3 << shift);
@@ -597,16 +476,6 @@ void RpiBus::DisablePulls(int pin) const
 
 void RpiBus::SetSignalDriveStrength(uint32_t drive) const
 {
-    if (pi_type == PiType::PI_5) {
-        // 12 mA is the RP1 maximum
-        const uint32_t rp1_drive = drive > 3 ? RP1_PAD_DRIVE_12MA : RP1_PAD_DRIVE_8MA;
-        for (int pin = PIN_ACT; pin <= PIN_SEL; ++pin) {
-            rp1_pads[1 + pin] = (rp1_pads[1 + pin] & ~(RP1_PAD_OUTPUT_DISABLE | RP1_PAD_DRIVE_MASK))
-                | RP1_PAD_INPUT_ENABLE | rp1_drive;
-        }
-        return;
-    }
-
     const uint32_t data = pads[PAD_0_27];
     pads[PAD_0_27] = (0xfffffff8 & data) | drive | 0x5a000000;
 }
@@ -615,15 +484,6 @@ void RpiBus::SetSignalDriveStrength(uint32_t drive) const
 // Furthermore, nanosleep() requires interrupts to be enabled.
 void RpiBus::WaitNanoSeconds(bool daynaport) const
 {
-    if (pi_type == PiType::PI_5) {
-        // The RP1 has no ARM timer, but the Pi 5 has a fast steady clock
-        const auto deadline = chrono::steady_clock::now() + (daynaport ? RP1_DAYNAPORT_DELAY : RP1_BUS_SETTLE_DELAY);
-        while (chrono::steady_clock::now() < deadline) {
-            // Intentionally empty
-        }
-        return;
-    }
-
     const uint32_t start = armt_addr[ARMT_FREERUN];
     // Either Daynaport delay or bus settle delay
     const uint32_t delta = daynaport ? daynaport_count : bus_settle_count;

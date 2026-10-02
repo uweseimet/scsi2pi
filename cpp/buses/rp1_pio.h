@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <span>
 #include <string>
@@ -26,11 +27,11 @@ public:
     Rp1Pio(const Rp1Pio&) = delete;
     Rp1Pio& operator=(const Rp1Pio&) = delete;
 
-    // The pointers are the IO_BANK0 registers and the SYS_RIO0 input level register
-    string Init(volatile uint32_t*, const volatile uint32_t*);
+    // The RP1 GPIO registers mapped by Pi5Bus
+    string Init(span<volatile uint32_t>);
 
     // Each word contains the output enable bits of a data byte and its parity (DT0-DT7, DP)
-    int Send(span<const uint32_t>);
+    int Send(span<uint32_t>);
 
     // The number of bytes must be a multiple of 4
     int Receive(data_in_t);
@@ -39,7 +40,7 @@ private:
 
     bool Ioctl(unsigned long, void*) const;
 
-    size_t Transfer(uint16_t, void*, size_t);
+    size_t Transfer(uint16_t, span<byte>);
 
     void Start() const;
 
@@ -57,9 +58,7 @@ private:
 
     uint16_t send_offset = 0;
 
-    volatile uint32_t *io_bank = nullptr;
-
-    const volatile uint32_t *level = nullptr;
+    span<volatile uint32_t> gpio;
 
     vector<uint32_t> words;
 };

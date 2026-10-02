@@ -41,8 +41,8 @@ TEST(TargetBusTest, TargetSendHandShake)
     MockBus bus;
     array<uint8_t, 1> buf = { };
 
-    // The data must not change before the initiator has released ACK
-    EXPECT_CALL(bus, SetDAT).Times(0);
+    EXPECT_CALL(bus, SetDAT);
+    EXPECT_CALL(bus, WaitNanoSeconds);
     EXPECT_CALL(bus, EnableIRQ);
     EXPECT_CALL(bus, DisableIRQ);
     EXPECT_CALL(bus, WaitHandShake);
