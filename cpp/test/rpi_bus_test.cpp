@@ -55,6 +55,10 @@ TEST(RpiBusTest, GetPiType)
 
     out.seekp(0);
     out << "Raspberry Pi 5" << flush;
+    EXPECT_EQ(RpiBus::PiType::PI_5, RpiBus::GetPiType(filename));
+
+    out.seekp(0);
+    out << "Raspberry Pi 6" << flush;
     EXPECT_EQ(RpiBus::PiType::UNKNOWN, RpiBus::GetPiType(filename));
 
     out.seekp(0);
