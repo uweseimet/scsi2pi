@@ -8,6 +8,7 @@
 //---------------------------------------------------------------------------
 
 #include "rpi_bus.h"
+#include <algorithm>
 #include <bit>
 #include <cstddef>
 #include <fstream>
@@ -244,6 +245,14 @@ string RpiBus::SetUp(bool target)
 
     CreateWorkTable();
 
+    if (pi_type == PiType::PI_5) {
+        pio = make_unique<Rp1Pio>();
+        if (const string &error = pio->Init(rp1_io, level); !error.empty()) {
+            warn("{}, using slower software handshakes", error);
+            pio.reset();
+        }
+    }
+
     // Set the initiator signal direction
     PinSetSignal(pin_ind, !target);
 
@@ -345,6 +354,42 @@ void RpiBus::SetDataDirIn(bool in) const
     for (const int pin : DATA_PINS) {
         PinSetSignal(pin, !in);
     }
+}
+
+int RpiBus::TargetSendHandShake(data_out_t buf, int daynaport_delay_after_bytes)
+{
+    if (!pio || buf.size() < MIN_PIO_BYTES || daynaport_delay_after_bytes != SEND_NO_DELAY) {
+        return Bus::TargetSendHandShake(buf, daynaport_delay_after_bytes);
+    }
+
+    // Keep the previous byte on the bus until the initiator has released ACK
+    if (!WaitHandShake(PIN_ACK_MASK, false)) {
+        return 0;
+    }
+
+    pio_words.resize(buf.size());
+    ranges::transform(buf, pio_words.begin(), [this](uint8_t b) { return tblDatSet[b] >> PIN_DT0; });
+
+    // From here on the PIO drives the data pins
+    SetRp1OutputEnable(RP1_DATA_MASK, false);
+
+    return pio->Send(pio_words);
+}
+
+int RpiBus::TargetReceiveHandShake(data_in_t buf)
+{
+    if (!pio || buf.size() < MIN_PIO_BYTES || buf.size() % 4) {
+        return Bus::TargetReceiveHandShake(buf);
+    }
+
+    if (!WaitHandShake(PIN_ACK_MASK, false)) {
+        return 0;
+    }
+
+    // The data pins are inputs during DATA OUT
+    SetRp1OutputEnable(RP1_DATA_MASK, false);
+
+    return pio->Receive(buf);
 }
 
 void RpiBus::SetDAT(uint8_t dat) const

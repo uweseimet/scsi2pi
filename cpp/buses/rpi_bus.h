@@ -9,10 +9,13 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
+#include <vector>
 #include <linux/gpio.h>
 #include <sys/epoll.h>
 #include "bus.h"
+#include "rp1_pio.h"
 
 class RpiBus final : public Bus
 {
@@ -41,6 +44,9 @@ public:
     // Pi 5: Function select of a pin in its RP1 IO_BANK0 control register
     static constexpr uint32_t RP1_FUNCSEL_MASK = 0x1f;
     static constexpr uint32_t RP1_FUNCSEL_SYS_RIO = 5;
+
+    int TargetReceiveHandShake(data_in_t) override;
+    int TargetSendHandShake(data_out_t, int = SEND_NO_DELAY) override;
 
 private:
 
@@ -147,6 +153,10 @@ private:
     volatile uint32_t *rp1_rio = nullptr;
     volatile uint32_t *rp1_pads = nullptr;
 
+    // Pi 5: Handshakes for DATA IN and DATA OUT run on the RP1 PIO if available
+    unique_ptr<Rp1Pio> pio;
+    vector<uint32_t> pio_words;
+
     // Pi 5: RAM copy of the output enable bits of the data pins, so that SetDAT() needs a single register write
     mutable uint32_t rp1_data_oe = 0;
 
@@ -208,6 +218,9 @@ private:
     static constexpr uint32_t RP1_PAD_DRIVE_12MA = 3U << 4;
     static constexpr uint32_t RP1_PAD_PULL_MASK = 3U << 2;
     static constexpr uint32_t RP1_DATA_MASK = 0b1'1111'1111U << PIN_DT0;
+
+    // Shorter transfers (e.g. STATUS or MESSAGE IN) are not worth the PIO setup overhead
+    static constexpr size_t MIN_PIO_BYTES = 16;
 
     // RP1 pad updates lag the register write, so the bus settle delay is longer than on the other models
     static constexpr auto RP1_BUS_SETTLE_DELAY = chrono::nanoseconds(1'000);
