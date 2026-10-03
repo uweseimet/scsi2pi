@@ -179,8 +179,8 @@ size_t Rp1Pio::Transfer(uint16_t dir, span<byte> data)
     size_t transferred = 0;
     while (transferred < data.size()) {
         const size_t count = min(data.size() - transferred, MAX_TRANSFER_BYTES);
-        rp1_pio_sm_xfer_data_args xfer = { .sm = sm, .dir = dir, .data_bytes = static_cast<uint16_t>(count), .data =
-            data.subspan(transferred).data() };
+        rp1_pio_sm_xfer_data_args xfer = { .sm = sm, .dir = dir, .data_bytes = static_cast<uint16_t>(count), .rsvd = 0,
+            .data = data.subspan(transferred).data() };
         if (!Ioctl(PIO_IOC_SM_XFER_DATA, &xfer)) {
             Abort(dir);
             break;
