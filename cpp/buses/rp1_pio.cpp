@@ -283,17 +283,17 @@ void Rp1Pio::Abort(uint16_t dir)
 
 Rp1Pio::~Rp1Pio() = default;
 
-string Rp1Pio::Init(span<volatile uint32_t>)
+string Rp1Pio::Init(span<volatile uint32_t>) // NOSONAR Cannot be const in order to be compatible with the PIO implementation
 {
     return "This build does not support the RP1 PIO";
 }
 
-int Rp1Pio::Send(span<uint32_t>)
+int Rp1Pio::Send(span<uint32_t>) // NOSONAR Cannot be const in order to be compatible with the PIO implementation
 {
     return 0;
 }
 
-int Rp1Pio::Receive(data_in_t)
+int Rp1Pio::Receive(data_in_t) // NOSONAR Cannot be const in order to be compatible with the PIO implementation
 {
     return 0;
 }
