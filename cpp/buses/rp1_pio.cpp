@@ -168,7 +168,7 @@ int Rp1Pio::Receive(data_in_t buf)
     return success ? static_cast<int>(buf.size()) : static_cast<int>(received * 4);
 }
 
-bool Rp1Pio::Ioctl(unsigned long request, void *args) const
+bool Rp1Pio::Ioctl(unsigned long request, void *args) const // NOSONAR void * cannot be replaced
 {
     return ioctl(fd, request, args) >= 0;
 }
