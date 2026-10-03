@@ -28,13 +28,13 @@ public:
     Rp1Pio& operator=(const Rp1Pio&) = delete;
 
     // The RP1 GPIO registers mapped by Pi5Bus
-    string Init(span<volatile uint32_t>) const;
+    string Init(span<volatile uint32_t>);
 
     // Each word contains the output enable bits of a data byte and its parity (DT0-DT7, DP)
-    int Send(span<uint32_t>) const;
+    int Send(span<uint32_t>);
 
     // The number of bytes must be a multiple of 4
-    int Receive(data_in_t) const;
+    int Receive(data_in_t);
 
 private:
 
