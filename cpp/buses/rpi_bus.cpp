@@ -511,7 +511,7 @@ RpiBus::PiType RpiBus::GetPiType(const string &device_file)
     else {
         type = model.contains("Zero") || model.contains("Raspberry Pi Model B Plus") ? 1 : model.substr(13, 1)[0] - '0';
     }
-    if (type <= 0 || type > 4) {
+    if (type <= 0 || type > 5) {
         warn("Unsupported Raspberry Pi model '{}', functionality is limited", model);
         return RpiBus::PiType::UNKNOWN;
     }
