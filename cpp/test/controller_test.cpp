@@ -31,7 +31,8 @@ TEST(ControllerTest, Process)
     constexpr int TARGET_ID = 5;
 
     const S2pFormatter formatter;
-    auto bus = BusFactory::GetInstance().CreateBus(true, "", false);
+    auto bus = BusFactory::GetInstance().CreateBus( { .standard_board = false, .target_mode = true,
+        .enable_irqs = false, .use_pio = false }, "");
     auto controller = make_shared<Controller>(*bus, TARGET_ID, nullptr, formatter);
 
     bus->SetRST(true);

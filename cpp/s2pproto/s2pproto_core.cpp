@@ -65,7 +65,7 @@ void S2pProto::Banner(bool header)
 
 bool S2pProto::Init()
 {
-    bus = BusFactory::GetInstance().CreateBus(false, APP_NAME);
+    bus = BusFactory::GetInstance().CreateBus( { }, APP_NAME);
     if (!bus) {
         return false;
     }

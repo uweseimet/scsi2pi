@@ -102,7 +102,8 @@ TEST(VirtualBusTest, IO)
 
 TEST(VirtualBusTest, DAT)
 {
-    const auto &bus = BusFactory::GetInstance().CreateBus(true, "");
+    const auto &bus = BusFactory::GetInstance().CreateBus( { .standard_board = false, .target_mode = true,
+        .enable_irqs = false, .use_pio = false }, "");
 
     bus->SetDAT(0xae);
     EXPECT_EQ(0xae, bus->GetDAT());
@@ -112,7 +113,8 @@ TEST(VirtualBusTest, DAT)
 
 TEST(VirtualBusTest, Acquire)
 {
-    const auto &bus = BusFactory::GetInstance().CreateBus(true, "");
+    const auto &bus = BusFactory::GetInstance().CreateBus( { .standard_board = false, .target_mode = true,
+        .enable_irqs = false, .use_pio = false }, "");
 
     bus->SetDAT(0x12);
     bus->Acquire();
@@ -121,7 +123,8 @@ TEST(VirtualBusTest, Acquire)
 
 TEST(VirtualBusTest, BusPhases)
 {
-    const auto &bus = BusFactory::GetInstance().CreateBus(true, "");
+    const auto &bus = BusFactory::GetInstance().CreateBus( { .standard_board = false, .target_mode = true,
+        .enable_irqs = false, .use_pio = false }, "");
 
     EXPECT_EQ(BusPhase::BUS_FREE, bus->GetPhase());
     EXPECT_TRUE(bus->IsPhase(BusPhase::BUS_FREE));
@@ -167,7 +170,7 @@ TEST(VirtualBusTest, BusPhases)
 
 TEST(VirtualBusTest, Init)
 {
-    VirtualBus bus("", false);
+    VirtualBus bus( { }, "");
 
     bus.SetSignals(0x12345678U);
     EXPECT_TRUE(bus.Init(false));
@@ -180,7 +183,7 @@ TEST(VirtualBusTest, Init)
 
 TEST(VirtualBusTest, Reset)
 {
-    VirtualBus bus("", false);
+    VirtualBus bus( { }, "");
 
     bus.SetSignal(PIN_BSY, true);
     EXPECT_TRUE(bus.GetSignal(PIN_BSY_MASK));
@@ -190,7 +193,7 @@ TEST(VirtualBusTest, Reset)
 
 TEST(VirtualBusTest, SetGetSignal)
 {
-    VirtualBus bus("", false);
+    VirtualBus bus( { }, "");
 
     bus.SetSignal(PIN_REQ, true);
     EXPECT_TRUE(bus.GetSignal(PIN_REQ_MASK));
@@ -200,7 +203,7 @@ TEST(VirtualBusTest, SetGetSignal)
 
 TEST(VirtualBusTest, WaitHandshakeACK)
 {
-    VirtualBus bus("", false);
+    VirtualBus bus( { }, "");
 
     bus.SetSignal(PIN_ACK, true);
     EXPECT_TRUE(bus.WaitHandShake(PIN_ACK_MASK, true));
@@ -215,7 +218,7 @@ TEST(VirtualBusTest, WaitHandshakeACK)
 
 TEST(VirtualBusTest, WaitHandshakeREQ)
 {
-    VirtualBus bus("", false);
+    VirtualBus bus( { }, "");
 
     bus.SetSignal(PIN_REQ, true);
     EXPECT_TRUE(bus.WaitHandShake(PIN_REQ_MASK, true));
@@ -230,5 +233,5 @@ TEST(VirtualBusTest, WaitHandshakeREQ)
 
 TEST(VirtualBusTest, IsRaspberryPi)
 {
-    EXPECT_FALSE(BusFactory::GetInstance().CreateBus(true, "")->IsRaspberryPi());
+    EXPECT_FALSE(BusFactory::GetInstance().CreateBus( { }, "")->IsRaspberryPi());
 }

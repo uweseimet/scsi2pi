@@ -25,31 +25,15 @@ using namespace spdlog;
 using namespace s2p_util;
 using namespace scsi_util;
 
-RpiBus::RpiBus(PiType type, bool standard_board, bool e) : pi_type(type), enable_irq(e)
-{
-    if (standard_board) {
-        pin_ind = -1;
-        pin_tad = -1;
-        pin_dtd = -1;
-    }
-}
-
 string RpiBus::SetUp(bool target)
 {
-    if (pin_ind < 0 && !target) {
-        return "Initiator mode requires a FULLSPEC board";
+    if (const string &error = GpioBus::SetUp(target); !error.empty()) {
+        return error;
     }
 
-    int fd = open("/dev/mem", O_RDWR | O_SYNC);
+    const int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd == -1) {
         return "Root permissions are required";
-    }
-
-    if (const unsigned int cores = thread::hardware_concurrency(); cores > 3) {
-        cpu_set_t cpuset;
-        CPU_ZERO(&cpuset);
-        CPU_SET(3, &cpuset);
-        pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
     }
 
     if (enable_irq) {
@@ -170,37 +154,8 @@ string RpiBus::SetUp(bool target)
     gpfsel[GPIO_FSEL_2] = gpio[GPIO_FSEL_2];
 
     // Initialize SEL signal interrupt
-    fd = open("/dev/gpiochip0", 0);
-    if (fd == -1) {
-        return "Can't open /dev/gpiochip0. If s2p is running (e.g. as a service), shut it down first.";
-    }
-
-    // Event request setting
-    strcpy(selevreq.consumer_label, "SCSI2Pi"); // NOSONAR Using strcpy is safe
-    selevreq.lineoffset = PIN_SEL;
-    selevreq.handleflags = GPIOHANDLE_REQUEST_INPUT;
-    selevreq.eventflags = GPIOEVENT_REQUEST_FALLING_EDGE;
-    selevreq.fd = -1;
-
-    if (ioctl(fd, GPIO_GET_LINEEVENT_IOCTL, &selevreq) == -1) {
-        close(fd);
-        return "Can't register event request. If s2p is running (e.g. as a service), shut it down first.";
-    }
-    close(fd);
-
-    epoll_fd = epoll_create1(EPOLL_CLOEXEC);
-    if (epoll_fd == -1) {
-        close(selevreq.fd);
-        return "Can't create epoll instance";
-    }
-
-    epoll_event ev = { };
-    ev.events = EPOLLIN | EPOLLPRI;
-    ev.data.fd = selevreq.fd;
-    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, selevreq.fd, &ev) == -1) {
-        close(epoll_fd);
-        close(selevreq.fd);
-        return "Can't add file descriptor to epoll";
+    if (const string &error = SetUpSelectionEvent(); !error.empty()) {
+        return error;
     }
 
     CreateWorkTable();
@@ -219,13 +174,7 @@ string RpiBus::SetUp(bool target)
 
 void RpiBus::CleanUp()
 {
-    if (epoll_fd >= 0) {
-        close(epoll_fd);
-    }
-
-    if (selevreq.fd >= 0) {
-        close(selevreq.fd);
-    }
+    GpioBus::CleanUp();
 
     // Set control signals
     PinSetSignal(PIN_ENB, false);
@@ -248,60 +197,10 @@ void RpiBus::CleanUp()
     }
 }
 
-void RpiBus::Reset() const
-{
-    Bus::Reset();
-
-    // Turn off active signal
-    PinSetSignal(PIN_ACT, false);
-
-    // Set all signals to off
-    for (const int pin : SIGNAL_TABLE) {
-        SetSignal(pin, false);
-    }
-
-    // Set target signal to input for all modes
-    PinSetSignal(pin_tad, false);
-}
-
-uint8_t RpiBus::WaitForSelection()
-{
-    if (epoll_event epev; epoll_wait(epoll_fd, &epev, 1, -1) == -1) {
-        if (errno != EINTR) {
-            warn("epoll_wait failed: {}", system_error(errno, generic_category()).what());
-        }
-        return 0;
-    }
-
-    if (gpioevent_data gpev; read(selevreq.fd, &gpev, sizeof(gpev)) == -1) {
-        if (errno != EINTR) {
-            warn("Reading event failed: {}", system_error(errno, generic_category()).what());
-        }
-        return 0;
-    }
-
-    return GetSelection();
-}
-
-void RpiBus::SetBSY(bool state) const
-{
-    Bus::SetBSY(state);
-
-    PinSetSignal(PIN_ACT, state);
-    PinSetSignal(pin_tad, state);
-}
-
-void RpiBus::SetSEL(bool state) const
-{
-    Bus::SetSEL(state);
-
-    PinSetSignal(PIN_ACT, state);
-}
-
 void RpiBus::SetDataDirIn(bool in) const
 {
     // Change the data input/output direction according to the IO signal
-    PinSetSignal(pin_dtd, !in);
+    GpioBus::SetDataDirIn(in);
 
     for (const int pin : DATA_PINS) {
         PinSetSignal(pin, !in);
@@ -511,7 +410,7 @@ RpiBus::PiType RpiBus::GetPiType(const string &device_file)
     else {
         type = model.contains("Zero") || model.contains("Raspberry Pi Model B Plus") ? 1 : model.substr(13, 1)[0] - '0';
     }
-    if (type <= 0 || type > 4) {
+    if (type <= 0 || type > 5) {
         warn("Unsupported Raspberry Pi model '{}', functionality is limited", model);
         return RpiBus::PiType::UNKNOWN;
     }

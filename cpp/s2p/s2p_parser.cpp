@@ -141,7 +141,8 @@ void s2p_parser::Banner(bool usage)
             << "  --config-files                 List of configuration files.\n"
             << "  --connect-type/-C              The board type, either STANDARD or FULLSPEC.\n"
             << "                                 Default is FULLSPEC.\n"
-            << "  --enable-irqs/-e               Do not disable IRQs during transfers.\n"
+            << "  --enable-irqs/-e               Do not disable IRQs during transfers\n"
+            << "                                 (Pi < Pi5 only)."
             << "  --excluded-types/-x TYPES      Do not report the listed device types in the\n"
             << "                                 API (for old PiSCSI web UI compatibility).\n"
             << "  --help/-h                      Display this help.\n"
@@ -164,6 +165,8 @@ void s2p_parser::Banner(bool usage)
             << "  --script-file/-f FILE          File to write s2pexec command script to.\n"
             << "  --scsi-level LEVEL             Optional SCSI/SPC standard level (1-8),\n"
             << "                                 default is device-specific and usually SCSI-2.\n"
+            << "  --software-handshake/-S        Use (slower) software handshake instead of\n"
+            << "                                 hardware handshake (Pi5 only).\n"
             << "  --token-file/-P FILE           Access token file.\n"
             << "  --type/-t DEVICE_TYPE          Optional case-insensitive device type\n"
             << "  --version/-v                   Display the s2p version.\n"
@@ -222,6 +225,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         { "scan-depth", required_argument, nullptr, 'R' },
         { "script-file", required_argument, nullptr, 'f' },
         { "scsi-level", required_argument, nullptr, OPT_SCSI_LEVEL },
+        { "software-handshake", no_argument, nullptr, 'S' },
         { "token-file", required_argument, nullptr, 'P' },
         { "type", required_argument, nullptr, 't' },
         { "version", no_argument, nullptr, 'v' },
@@ -260,7 +264,7 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:ef:hl:m:n:p:r:s:t:x:z:C:IF:L:P:R:BZ",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "-i:b:c:ef:hl:m:n:p:r:s:t:x:z:C:IF:L:P:R:SBZ",
         options.data(), nullptr)) != -1) {
         if (const auto &property = OPTIONS_TO_PROPERTIES.find(opt); property != OPTIONS_TO_PROPERTIES.end()) {
             properties[property->second] = optarg ? optarg : "true";
@@ -306,6 +310,10 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
 
         case 's':
             // Ignore dubious piscsi option
+            continue;
+
+        case 'S':
+            properties[PropertyHandler::SOFTWARE_HANDSHAKE] = "true";
             continue;
 
         case 't':

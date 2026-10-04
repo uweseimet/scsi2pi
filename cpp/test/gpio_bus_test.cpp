@@ -2,13 +2,16 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2023-2026 Uwe Seimet
+// Copyright (C) 2025-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
-#include "s2p_version.h"
+#include <gtest/gtest.h>
+#include "buses/rpi_bus.h"
 
-constexpr int s2p_major_version = 7;
-constexpr int s2p_minor_version = 0;
-constexpr int s2p_revision = 0;
-const std::string s2p_suffix = "-devel";
+TEST(GpioBusTest, IsRaspberryPi)
+{
+    RpiBus bus(RpiBus::PiType::PI_1, { });
+
+    EXPECT_TRUE(bus.IsRaspberryPi());
+}

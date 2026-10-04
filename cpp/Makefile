@@ -249,7 +249,10 @@ SRC_BUSES := $(DIR_BUSES)/bus.cpp \
 	$(DIR_BUSES)/target_bus.cpp \
 	$(DIR_BUSES)/virtual_bus.cpp
 ifdef IS_LINUX
-SRC_BUSES += $(DIR_BUSES)/rpi_bus.cpp
+SRC_BUSES += $(DIR_BUSES)/gpio_bus.cpp \
+	$(DIR_BUSES)/pi5_bus.cpp \
+	$(DIR_BUSES)/rpi_bus.cpp \
+	$(DIR_BUSES)/rp1_pio.cpp
 endif
 
 SRC_CONTROLLERS := $(DIR_CONTROLLERS)/abstract_controller.cpp \
@@ -372,6 +375,7 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/disk_cache_test.cpp \
 	test/disk_test.cpp \
 	test/file_util_test.cpp \
+	test/gpio_bus_test.cpp \
 	test/host_services_test.cpp \
 	test/initiator_bus_test.cpp \
 	test/initiator_executor_test.cpp \

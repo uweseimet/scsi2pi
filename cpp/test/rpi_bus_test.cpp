@@ -15,7 +15,8 @@ using namespace s2p_test;
 
 TEST(RpiBusTest, SetUp)
 {
-    RpiBus bus(RpiBus::PiType::UNKNOWN, true, false);
+    RpiBus bus(RpiBus::PiType::UNKNOWN, { .standard_board = false, .target_mode = true, .enable_irqs = false, .use_pio =
+        false });
 
     EXPECT_FALSE(bus.Init(false));
 }
@@ -55,6 +56,10 @@ TEST(RpiBusTest, GetPiType)
 
     out.seekp(0);
     out << "Raspberry Pi 5" << flush;
+    EXPECT_EQ(RpiBus::PiType::PI_5, RpiBus::GetPiType(filename));
+
+    out.seekp(0);
+    out << "Raspberry Pi 6" << flush;
     EXPECT_EQ(RpiBus::PiType::UNKNOWN, RpiBus::GetPiType(filename));
 
     out.seekp(0);
@@ -62,11 +67,4 @@ TEST(RpiBusTest, GetPiType)
     EXPECT_EQ(RpiBus::PiType::UNKNOWN, RpiBus::GetPiType(filename));
 
     EXPECT_EQ(RpiBus::PiType::UNKNOWN, RpiBus::GetPiType("/xyz"));
-}
-
-TEST(RpiBusTest, IsRaspberryPi)
-{
-    RpiBus bus(RpiBus::PiType::PI_1, false, false);
-
-    EXPECT_TRUE(bus.IsRaspberryPi());
 }

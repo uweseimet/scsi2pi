@@ -25,7 +25,7 @@ public:
         return instance;
     }
 
-    unique_ptr<Bus> CreateBus(bool, const string&, bool = false, bool = false);
+    unique_ptr<Bus> CreateBus(Bus::BusProperties, const string&);
 
     void EnableVirtualBus(bool = false);
 

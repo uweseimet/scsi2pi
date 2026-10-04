@@ -11,6 +11,7 @@
 
 TEST(BusFactoryTest, CreateBus)
 {
-    EXPECT_NE(nullptr, BusFactory::GetInstance().CreateBus(true, ""));
-    EXPECT_NE(nullptr, BusFactory::GetInstance().CreateBus(false, ""));
+    EXPECT_NE(nullptr,
+        BusFactory::GetInstance().CreateBus( { .standard_board=false, .target_mode=true, .enable_irqs=false, .use_pio = false}, ""));
+    EXPECT_NE(nullptr, BusFactory::GetInstance().CreateBus( { }, ""));
 }

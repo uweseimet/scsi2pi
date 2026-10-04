@@ -10,11 +10,9 @@
 #pragma once
 
 #include <string>
-#include <linux/gpio.h>
-#include <sys/epoll.h>
-#include "bus.h"
+#include "gpio_bus.h"
 
-class RpiBus final : public Bus
+class RpiBus final : public GpioBus
 {
 
 public:
@@ -25,14 +23,12 @@ public:
         PI_1 = 1,
         PI_2 = 2,
         PI_3 = 3,
-        PI_4 = 4
+        PI_4 = 4,
+        PI_5 = 5
     };
 
-    RpiBus(PiType type, bool, bool);
-
-    bool IsRaspberryPi() const override
+    RpiBus(PiType type, Bus::BusProperties p) : GpioBus(p.standard_board), pi_type(type), enable_irq(p.enable_irqs)
     {
-        return true;
     }
 
     static PiType GetPiType(const string& = "/proc/device-tree/model");
@@ -41,8 +37,6 @@ private:
 
     string SetUp(bool) override;
     void CleanUp() override;
-
-    void Reset() const override;
 
     void InitializeSignals() const;
 
@@ -58,7 +52,7 @@ private:
     // GPIO pin direction setting
     void PinConfig(int, int) const;
 
-    void PinSetSignal(int, bool) const;
+    void PinSetSignal(int, bool) const override;
 
     // Set GPIO pin pull up/down resistor setting
     void DisablePulls(int) const;
@@ -72,25 +66,14 @@ private:
         SetSignals(*level);
     }
 
-    void SetBSY(bool) const override;
-
-    void SetSEL(bool) const override;
-
     void SetDAT(uint8_t) const override;
 
     void WaitNanoSeconds(bool) const override;
-
-    uint8_t WaitForSelection() override;
 
     const PiType pi_type;
 
     const bool enable_irq;
     bool irq_disabled = false;
-
-    // Set to -1 for the STANDARD board
-    int pin_ind = PIN_IND;
-    int pin_tad = PIN_TAD;
-    int pin_dtd = PIN_DTD;
 
     uint32_t bus_settle_count = 0;
     uint32_t daynaport_count = 0;
@@ -121,11 +104,6 @@ private:
     // GIC priority setting
     uint32_t gicc_pmr_saved = 0;
 
-    // SEL signal event request
-    struct gpioevent_request selevreq = { };
-
-    int epoll_fd = -1;
-
     // GIC CPU interface register
     volatile uint32_t *gicc_mpr = nullptr;
 
@@ -138,9 +116,6 @@ private:
 
     // Data setting table for data pins
     array<uint32_t, 256> tblDatSet = { };
-
-    static constexpr auto SIGNAL_TABLE = to_array<int>( { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6,
-        PIN_DT7, PIN_DP, PIN_SEL, PIN_ATN, PIN_RST, PIN_ACK, PIN_BSY, PIN_MSG, PIN_CD, PIN_IO, PIN_REQ });
 
     static constexpr auto DATA_PINS = to_array<int>( { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6,
         PIN_DT7, PIN_DP });

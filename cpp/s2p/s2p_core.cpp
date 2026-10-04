@@ -44,7 +44,9 @@ string S2p::InitBus()
         return fmt::format("Invalid connection type '{}'", connection_type);
     }
 
-    bus = BusFactory::GetInstance().CreateBus(true, APP_NAME, board_type == "standard", enable_irqs);
+    const string software_handshake = property_handler.ConsumeProperty(PropertyHandler::SOFTWARE_HANDSHAKE, "false");
+    bus = BusFactory::GetInstance().CreateBus( { .standard_board = board_type == "standard", .target_mode = true,
+        .enable_irqs = enable_irqs, .use_pio = ToLower(software_handshake) != "true" }, APP_NAME);
     if (!bus) {
         return "Can't initialize bus";
     }

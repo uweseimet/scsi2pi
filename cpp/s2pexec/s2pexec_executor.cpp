@@ -33,7 +33,7 @@ string S2pExecExecutor::Init([[maybe_unused]] const string &device)
 string S2pExecExecutor::Init(int id, const string &name)
 {
     if (!bus) {
-        bus = BusFactory::GetInstance().CreateBus(false, name);
+        bus = BusFactory::GetInstance().CreateBus( { }, name);
         if (!bus) {
             return "Can't initialize bus";
         }

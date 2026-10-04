@@ -22,6 +22,14 @@ class Bus // NOSONAR The high number of simple convenience methods is justified
 
 public:
 
+    struct BusProperties
+    {
+        bool standard_board = false;
+        bool target_mode = false;
+        bool enable_irqs = false;
+        bool use_pio = true;
+    };
+
     virtual ~Bus() = default;
 
     bool Init(bool);
@@ -44,8 +52,8 @@ public:
     virtual bool WaitHandShake(int, bool) const;
 
     int TargetCommandHandShake(data_in_t);
-    int TargetReceiveHandShake(data_in_t);
-    int TargetSendHandShake(data_out_t, int = SEND_NO_DELAY);
+    virtual int TargetReceiveHandShake(data_in_t);
+    virtual int TargetSendHandShake(data_out_t, int = SEND_NO_DELAY);
     int InitiatorMsgInHandShake() const;
     int InitiatorReceiveHandShake(data_in_t);
     int InitiatorSendHandShake(data_out_t);

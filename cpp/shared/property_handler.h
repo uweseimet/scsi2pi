@@ -56,6 +56,7 @@ public:
     static constexpr const char *RESERVED_IDS = "reserved_ids";
     static constexpr const char *SCAN_DEPTH = "scan_depth";
     static constexpr const char *SCRIPT_FILE = "script_file";
+    static constexpr const char *SOFTWARE_HANDSHAKE = "software_handshake";
     static constexpr const char *TOKEN_FILE = "token_file";
 
     // Device-specific property keys

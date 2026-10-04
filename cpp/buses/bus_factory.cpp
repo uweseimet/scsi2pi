@@ -9,15 +9,15 @@
 #include "bus_factory.h"
 #include <spdlog/spdlog.h>
 #if __has_include (<linux/gpio.h>)
+#include "pi5_bus.h"
 #include "rpi_bus.h"
 #endif
 #include "virtual_bus.h"
 
-unique_ptr<Bus> BusFactory::CreateBus(bool target, const string &identifier,
-    [[maybe_unused]] bool standard_board, [[maybe_unused]] bool enable_irq)
+unique_ptr<Bus> BusFactory::CreateBus(Bus::BusProperties bus_properties, const string &identifier)
 {
-    auto make_initialized = [target](unique_ptr<Bus> bus) {
-        return (bus && bus->Init(target)) ? std::move(bus) : nullptr;
+    auto make_initialized = [bus_properties](unique_ptr<Bus> bus) {
+        return (bus && bus->Init(bus_properties.target_mode)) ? std::move(bus) : nullptr;
     };
 
     if (virtual_bus) {
@@ -26,15 +26,17 @@ unique_ptr<Bus> BusFactory::CreateBus(bool target, const string &identifier,
 
 #if __has_include (<linux/gpio.h>)
     if (const auto pi_type = RpiBus::GetPiType(); pi_type != RpiBus::PiType::UNKNOWN) {
-        constexpr bool override_standard_board =
-
 #ifdef BOARD_STANDARD
-            true;
+            bus_properties.standard_board = true;
 #else
-            false;
+            bus_properties.standard_board = false;
 #endif
 
-        auto bus = make_unique<RpiBus>(pi_type, override_standard_board || standard_board, enable_irq);
+        if (pi_type == RpiBus::PiType::PI_5) {
+            return make_initialized(make_unique<Pi5Bus>(bus_properties));
+        }
+
+        auto bus = make_unique<RpiBus>(pi_type, bus_properties);
         return make_initialized(std::move(bus));
     }
 #else

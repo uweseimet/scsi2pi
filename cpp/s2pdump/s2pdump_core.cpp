@@ -88,7 +88,7 @@ void S2pDump::Banner(bool header) const
 
 bool S2pDump::Init()
 {
-    bus = BusFactory::GetInstance().CreateBus(false, APP_NAME);
+    bus = BusFactory::GetInstance().CreateBus( { }, APP_NAME);
     if (!bus) {
         return false;
     }
