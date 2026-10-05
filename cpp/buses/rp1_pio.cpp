@@ -58,6 +58,8 @@ constexpr array<uint16_t, 11> TARGET_SEND_PROGRAM = { 0x80a0, 0x6089 | SETTLE_DE
     0xe080, 0x2080 | PIN_ACK };
 
 // 31 delay cycles (155 ns) between ACK and sampling the data pins, because some data lines settle later than ACK
+// TODO Not required by the SCSI specification, which has the initiator drive valid data 55 ns before ACK.
+// Find out why the data lines settle late after ACK (a Mac Plus needs at least 80 ns)
 constexpr uint16_t SAMPLE_DELAY = 31 << 8;
 
 // The RX DMA only starts after the state machine, so the program first pushes one dummy word more than the
