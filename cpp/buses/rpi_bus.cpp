@@ -25,6 +25,45 @@ using namespace spdlog;
 using namespace s2p_util;
 using namespace scsi_util;
 
+namespace
+{
+
+constexpr auto DATA_PINS = to_array<int>( { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6, PIN_DT7,
+    PIN_DP });
+
+constexpr int ARMT_CTRL = 2;
+constexpr int ARMT_FREERUN = 8;
+
+constexpr uint32_t ARMT_OFFSET = 0x0000B400;
+
+constexpr int GPIO_INPUT = 0;
+constexpr int GPIO_OUTPUT = 1;
+
+constexpr int GPIO_FSEL_0 = 0;
+constexpr int GPIO_FSEL_1 = 1;
+constexpr int GPIO_FSEL_2 = 2;
+constexpr int GPIO_SET_0 = 7;
+constexpr int GPIO_CLR_0 = 10;
+constexpr int GPIO_LEV_0 = 13;
+constexpr int GPIO_PUD = 37;
+constexpr int GPIO_CLK_0 = 38;
+constexpr int GPIO_PUPPDN0 = 57;
+constexpr int PAD_0_27 = 11;
+constexpr int IRPT_ENB_IRQ_1 = 4;
+constexpr int IRPT_DIS_IRQ_1 = 7;
+constexpr int QA7_CORE0_TINTC = 16;
+
+constexpr uint32_t IRPT_OFFSET = 0x0000B200;
+constexpr uint32_t PADS_OFFSET = 0x00100000;
+constexpr uint32_t GPIO_OFFSET = 0x00200000;
+constexpr uint32_t QA7_OFFSET = 0x01000000;
+
+constexpr uint32_t PI4_ARM_GICC_CTLR = 0xFF842000;
+
+constexpr uint32_t DATA_MASK = 0b11111000000000000000000000000000;
+
+}
+
 string RpiBus::SetUp(bool target)
 {
     if (const string &error = GpioBus::SetUp(target); !error.empty()) {
@@ -137,13 +176,13 @@ string RpiBus::SetUp(bool target)
 
     // Set control signals
     PinSetSignal(PIN_ACT, false);
-    PinSetSignal(pin_tad, false);
-    PinSetSignal(pin_ind, false);
-    PinSetSignal(pin_dtd, false);
+    PinSetSignal(GetPinTad(), false);
+    PinSetSignal(GetPinInd(), false);
+    PinSetSignal(GetPinDtd(), false);
     PinConfig(PIN_ACT, GPIO_OUTPUT);
-    PinConfig(pin_tad, GPIO_OUTPUT);
-    PinConfig(pin_ind, GPIO_OUTPUT);
-    PinConfig(pin_dtd, GPIO_OUTPUT);
+    PinConfig(GetPinTad(), GPIO_OUTPUT);
+    PinConfig(GetPinInd(), GPIO_OUTPUT);
+    PinConfig(GetPinDtd(), GPIO_OUTPUT);
 
     PinSetSignal(PIN_ENB, false);
     PinConfig(PIN_ENB, GPIO_OUTPUT);
@@ -161,10 +200,10 @@ string RpiBus::SetUp(bool target)
     CreateWorkTable();
 
     // Set the initiator signal direction
-    PinSetSignal(pin_ind, !target);
+    PinSetSignal(GetPinInd(), !target);
 
     // Set data bus signal directions
-    PinSetSignal(pin_dtd, target);
+    PinSetSignal(GetPinDtd(), target);
 
     // Set ENABLE in order to show the user that s2p is running
     PinSetSignal(PIN_ENB, true);
@@ -179,13 +218,13 @@ void RpiBus::CleanUp()
     // Set control signals
     PinSetSignal(PIN_ENB, false);
     PinSetSignal(PIN_ACT, false);
-    PinSetSignal(pin_tad, false);
-    PinSetSignal(pin_ind, false);
-    PinSetSignal(pin_dtd, false);
+    PinSetSignal(GetPinTad(), false);
+    PinSetSignal(GetPinInd(), false);
+    PinSetSignal(GetPinDtd(), false);
     PinConfig(PIN_ACT, GPIO_INPUT);
-    PinConfig(pin_tad, GPIO_INPUT);
-    PinConfig(pin_ind, GPIO_INPUT);
-    PinConfig(pin_dtd, GPIO_INPUT);
+    PinConfig(GetPinTad(), GPIO_INPUT);
+    PinConfig(GetPinInd(), GPIO_INPUT);
+    PinConfig(GetPinDtd(), GPIO_INPUT);
 
     InitializeSignals();
 
@@ -343,11 +382,9 @@ void RpiBus::PinConfig(int pin, int mode) const
 // Set output pin
 void RpiBus::PinSetSignal(int pin, bool state) const
 {
-    if (pin < 0) {
-        return;
+    if (pin >= 0) {
+        gpio[state ? GPIO_SET_0 : GPIO_CLR_0] = 1U << pin;
     }
-
-    gpio[state ? GPIO_SET_0 : GPIO_CLR_0] = 1U << pin;
 }
 
 void RpiBus::DisablePulls(int pin) const

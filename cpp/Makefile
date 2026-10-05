@@ -375,7 +375,6 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/disk_cache_test.cpp \
 	test/disk_test.cpp \
 	test/file_util_test.cpp \
-	test/gpio_bus_test.cpp \
 	test/host_services_test.cpp \
 	test/initiator_bus_test.cpp \
 	test/initiator_executor_test.cpp \
@@ -413,6 +412,7 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/test_shared.cpp
 ifdef IS_LINUX
 SRC_S2P_TEST += test/daynaport_test.cpp \
+	test/gpio_bus_test.cpp \
 	test/network_util_test.cpp \
 	test/rpi_bus_test.cpp \
 	test/scsi_generic_test.cpp \

@@ -116,38 +116,4 @@ private:
 
     // Data setting table for data pins
     array<uint32_t, 256> tblDatSet = { };
-
-    static constexpr auto DATA_PINS = to_array<int>( { PIN_DT0, PIN_DT1, PIN_DT2, PIN_DT3, PIN_DT4, PIN_DT5, PIN_DT6,
-        PIN_DT7, PIN_DP });
-
-    static constexpr int ARMT_CTRL = 2;
-    static constexpr int ARMT_FREERUN = 8;
-
-    static constexpr uint32_t ARMT_OFFSET = 0x0000B400;
-
-    static constexpr int GPIO_INPUT = 0;
-    static constexpr int GPIO_OUTPUT = 1;
-
-    static constexpr int GPIO_FSEL_0 = 0;
-    static constexpr int GPIO_FSEL_1 = 1;
-    static constexpr int GPIO_FSEL_2 = 2;
-    static constexpr int GPIO_SET_0 = 7;
-    static constexpr int GPIO_CLR_0 = 10;
-    static constexpr int GPIO_LEV_0 = 13;
-    static constexpr int GPIO_PUD = 37;
-    static constexpr int GPIO_CLK_0 = 38;
-    static constexpr int GPIO_PUPPDN0 = 57;
-    static constexpr int PAD_0_27 = 11;
-    static constexpr int IRPT_ENB_IRQ_1 = 4;
-    static constexpr int IRPT_DIS_IRQ_1 = 7;
-    static constexpr int QA7_CORE0_TINTC = 16;
-
-    static constexpr uint32_t IRPT_OFFSET = 0x0000B200;
-    static constexpr uint32_t PADS_OFFSET = 0x00100000;
-    static constexpr uint32_t GPIO_OFFSET = 0x00200000;
-    static constexpr uint32_t QA7_OFFSET = 0x01000000;
-
-    static constexpr uint32_t PI4_ARM_GICC_CTLR = 0xFF842000;
-
-    static constexpr uint32_t DATA_MASK = 0b11111000000000000000000000000000;
 };
