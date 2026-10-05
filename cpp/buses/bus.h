@@ -28,6 +28,7 @@ public:
         bool target_mode = false;
         bool enable_irqs = false;
         bool use_pio = false;
+        bool blind_writes = false;
     };
 
     virtual ~Bus() = default;

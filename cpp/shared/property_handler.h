@@ -42,6 +42,7 @@ public:
     static constexpr const char *CONFIGURATION = "/etc/s2p.conf";
 
     // Global property keys
+    static constexpr const char *BLIND_WRITES = "blind_writes";
     static constexpr const char *CONFIG_FILES = "config_files";
     static constexpr const char *CONNECT_TYPE = "connect_type";
     static constexpr const char *ENABLE_IRQS = "enable_irqs";

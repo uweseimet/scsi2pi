@@ -62,20 +62,27 @@ constexpr array<uint16_t, 11> TARGET_SEND_PROGRAM = { 0x80a0, 0x6089 | SETTLE_DE
 // Find out why the data lines settle late after ACK (a Mac Plus needs at least 80 ns)
 constexpr uint16_t SAMPLE_DELAY = 31 << 8;
 
-// The RX DMA only starts after the state machine, so the program first pushes one dummy word more than the
-// FIFO holds. The last push completes once the DMA is reading, and only then is the first REQ asserted.
+// pull (the byte count - 1); mov x, osr; loop: set pindirs, 1 (assert REQ); wait 0 gpio ACK; in pins, 8 (4 bytes per
+// FIFO word); set pindirs, 0 (release REQ); wait 1 gpio ACK; jmp x--, loop.
+// Loaded at offset 0 because of the absolute jump target. Stalls at "pull" when done.
+constexpr array<uint16_t, 8> TARGET_RECEIVE_PROGRAM = { 0x80a0, 0xa027, 0xe081, 0x2000 | PIN_ACK | SAMPLE_DELAY, 0x4008 | (7 << 8),
+    0xe080, 0x2080 | PIN_ACK, 0x0042 };
+
+// Blind writes: the RX DMA only starts after the state machine. An initiator that sends the next byte without waiting
+// for REQ (e.g. a Mac Plus) loses bytes if REQ stays asserted while the DMA is not yet draining the FIFO. This program first
+// pushes one dummy word more than the FIFO holds. The last push completes once the DMA is reading, and only then is the
+// first REQ asserted. The host discards the dummy words.
 constexpr size_t PRIME_WORDS = 9;
 
 // pull (the byte count - 1); mov x, osr; set y, 8; prime: push; jmp y--, prime;
 // loop: set pindirs, 1 (assert REQ); wait 0 gpio ACK; in pins, 8 (4 bytes per FIFO word); set pindirs, 0 (release REQ);
 // wait 1 gpio ACK; jmp x--, loop.
 // Loaded at offset 0 because of the absolute jump targets. Stalls at "pull" when done.
-constexpr array<uint16_t, 11> TARGET_RECEIVE_PROGRAM = { 0x80a0, 0xa027, 0xe040 | (PRIME_WORDS - 1), 0x8020, 0x0083, 0xe081,
-    0x2000 | PIN_ACK | SAMPLE_DELAY, 0x4008 | (7 << 8), 0xe080, 0x2080 | PIN_ACK, 0x0045 };
+constexpr array<uint16_t, 11> TARGET_RECEIVE_PRIMED_PROGRAM = { 0x80a0, 0xa027, 0xe040 | (PRIME_WORDS - 1), 0x8020, 0x0083,
+    0xe081, 0x2000 | PIN_ACK | SAMPLE_DELAY, 0x4008 | (7 << 8), 0xe080, 0x2080 | PIN_ACK, 0x0045 };
 
-constexpr uint16_t TARGET_SEND_ORIGIN = TARGET_RECEIVE_PROGRAM.size();
-
-static_assert(TARGET_SEND_ORIGIN + TARGET_SEND_PROGRAM.size() <= 32, "The PIO instruction memory has 32 slots");
+static_assert(TARGET_RECEIVE_PRIMED_PROGRAM.size() + TARGET_SEND_PROGRAM.size() <= 32,
+    "The PIO instruction memory has 32 slots");
 
 // Initiator mode
 //
@@ -179,10 +186,13 @@ Rp1Pio::~Rp1Pio()
     }
 }
 
-string Rp1Pio::Init(span<volatile uint32_t> g, bool t)
+string Rp1Pio::Init(span<volatile uint32_t> g, bool t, bool blind_writes)
 {
     gpio = g;
     target = t;
+    receive_program = blind_writes ? span<const uint16_t>(TARGET_RECEIVE_PRIMED_PROGRAM) : span<const uint16_t>(TARGET_RECEIVE_PROGRAM);
+    prime_words = blind_writes ? PRIME_WORDS : 0;
+    send_origin = static_cast<uint16_t>(receive_program.size());
     pin_mask = target ? TARGET_PIN_MASK : INITIATOR_PIN_MASK;
 
     fd = open("/dev/pio0", O_RDWR | O_CLOEXEC);
@@ -226,8 +236,7 @@ string Rp1Pio::LoadPrograms()
     // The instruction memory (32 instructions) does not hold the programs of both modes, which is not an issue
     // because we are either in target or in initiator mode
     if (target) {
-        if (add_program(TARGET_RECEIVE_PROGRAM, 0) < 0
-            || add_program(TARGET_SEND_PROGRAM, TARGET_SEND_ORIGIN) != TARGET_SEND_ORIGIN) {
+        if (add_program(receive_program, 0) < 0 || add_program(TARGET_SEND_PROGRAM, send_origin) != send_origin) {
             return "Can't load the target mode PIO programs: "s + system_error(errno, generic_category()).what();
         }
     }
@@ -264,10 +273,10 @@ int Rp1Pio::TargetReceive(data_in_t buf)
     Ioctl(PIO_IOC_SM_PUT, &put);
     Start();
 
-    // Four bytes per word, after the dummy words
-    words.resize(PRIME_WORDS + (buf.size() / 4));
+    // Four bytes per word, after the dummy words (blind writes only)
+    words.resize(prime_words + (buf.size() / 4));
     const size_t transferred = Transfer(RP1_PIO_DIR_FROM_SM, as_writable_bytes(span(words))) / sizeof(uint32_t);
-    const size_t received = transferred > PRIME_WORDS ? transferred - PRIME_WORDS : 0;
+    const size_t received = transferred > prime_words ? transferred - prime_words : 0;
 
     const bool success = transferred == words.size() && WaitForCompletion(false);
 
@@ -275,7 +284,7 @@ int Rp1Pio::TargetReceive(data_in_t buf)
 
     for (size_t i = 0; i < received; ++i) {
         // Invert because of negative logic, the first byte is in the lowest 8 bits
-        const uint32_t w = ~words[PRIME_WORDS + i];
+        const uint32_t w = ~words[prime_words + i];
         for (size_t j = 0; j < 4; ++j) {
             buf[i * 4 + j] = static_cast<uint8_t>(w >> (8 * j));
         }
@@ -392,8 +401,8 @@ void Rp1Pio::SetUpStateMachine(bool receive)
     uint32_t signal_pinctrl;
     uint32_t execctrl_flags = 0;
     if (target) {
-        start = receive ? 0 : TARGET_SEND_ORIGIN;
-        end = start + static_cast<uint16_t>(receive ? TARGET_RECEIVE_PROGRAM.size() : TARGET_SEND_PROGRAM.size()) - 1;
+        start = receive ? 0 : send_origin;
+        end = start + static_cast<uint16_t>(receive ? receive_program.size() : TARGET_SEND_PROGRAM.size()) - 1;
         signal_pinctrl = SET_PIN_REQ;
     }
     else {
@@ -496,7 +505,7 @@ void Rp1Pio::Abort(uint16_t dir)
 
 Rp1Pio::~Rp1Pio() = default;
 
-string Rp1Pio::Init(span<volatile uint32_t>, bool) // NOSONAR Cannot be const in order to be compatible with the PIO implementation
+string Rp1Pio::Init(span<volatile uint32_t>, bool, bool) // NOSONAR Cannot be const in order to be compatible with the PIO implementation
 {
     return "This build does not support the RP1 PIO";
 }
