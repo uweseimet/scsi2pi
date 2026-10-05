@@ -60,11 +60,16 @@ constexpr array<uint16_t, 11> TARGET_SEND_PROGRAM = { 0x80a0, 0x6089 | SETTLE_DE
 // 31 delay cycles (155 ns) between ACK and sampling the data pins, because some data lines settle later than ACK
 constexpr uint16_t SAMPLE_DELAY = 31 << 8;
 
-// pull (the byte count - 1); mov x, osr; loop: set pindirs, 1 (assert REQ); wait 0 gpio ACK; in pins, 8 (4 bytes per
-// FIFO word); set pindirs, 0 (release REQ); wait 1 gpio ACK; jmp x--, loop.
-// Loaded at offset 0 because of the absolute jump target. Stalls at "pull" when done.
-constexpr array<uint16_t, 8> TARGET_RECEIVE_PROGRAM = { 0x80a0, 0xa027, 0xe081, 0x2000 | PIN_ACK | SAMPLE_DELAY, 0x4008 | (7 << 8),
-    0xe080, 0x2080 | PIN_ACK, 0x0042 };
+// The RX DMA only starts after the state machine, so the program first pushes one dummy word more than the
+// FIFO holds. The last push completes once the DMA is reading, and only then is the first REQ asserted.
+constexpr size_t PRIME_WORDS = 9;
+
+// pull (the byte count - 1); mov x, osr; set y, 8; prime: push; jmp y--, prime;
+// loop: set pindirs, 1 (assert REQ); wait 0 gpio ACK; in pins, 8 (4 bytes per FIFO word); set pindirs, 0 (release REQ);
+// wait 1 gpio ACK; jmp x--, loop.
+// Loaded at offset 0 because of the absolute jump targets. Stalls at "pull" when done.
+constexpr array<uint16_t, 11> TARGET_RECEIVE_PROGRAM = { 0x80a0, 0xa027, 0xe040 | (PRIME_WORDS - 1), 0x8020, 0x0083, 0xe081,
+    0x2000 | PIN_ACK | SAMPLE_DELAY, 0x4008 | (7 << 8), 0xe080, 0x2080 | PIN_ACK, 0x0045 };
 
 constexpr uint16_t TARGET_SEND_ORIGIN = TARGET_RECEIVE_PROGRAM.size();
 
@@ -257,17 +262,18 @@ int Rp1Pio::TargetReceive(data_in_t buf)
     Ioctl(PIO_IOC_SM_PUT, &put);
     Start();
 
-    // Four bytes per word
-    words.resize(buf.size() / 4);
-    const size_t received = Transfer(RP1_PIO_DIR_FROM_SM, as_writable_bytes(span(words))) / sizeof(uint32_t);
+    // Four bytes per word, after the dummy words
+    words.resize(PRIME_WORDS + (buf.size() / 4));
+    const size_t transferred = Transfer(RP1_PIO_DIR_FROM_SM, as_writable_bytes(span(words))) / sizeof(uint32_t);
+    const size_t received = transferred > PRIME_WORDS ? transferred - PRIME_WORDS : 0;
 
-    const bool success = received == words.size() && WaitForCompletion(false);
+    const bool success = transferred == words.size() && WaitForCompletion(false);
 
     SetUpStateMachine(false);
 
     for (size_t i = 0; i < received; ++i) {
         // Invert because of negative logic, the first byte is in the lowest 8 bits
-        const uint32_t w = ~words[i];
+        const uint32_t w = ~words[PRIME_WORDS + i];
         for (size_t j = 0; j < 4; ++j) {
             buf[i * 4 + j] = static_cast<uint8_t>(w >> (8 * j));
         }
