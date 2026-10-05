@@ -10,6 +10,7 @@
 
 #include <array>
 #include <cstdint>
+#include <ctime> // NOSONAR Using nanosleep cannot be avoided
 #include <span>
 #include <string>
 #include <unordered_map>

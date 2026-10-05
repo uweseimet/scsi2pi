@@ -9,7 +9,6 @@
 #include "scsi_util.h"
 #include <cassert>
 #include <cstring>
-#include <ctime> // NOSONAR Using nanosleep cannot be avoided
 #include <utility>
 #include <spdlog/fmt/fmt.h>
 #include "memory_util.h"

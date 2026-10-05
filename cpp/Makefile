@@ -68,7 +68,7 @@ ifeq ($(UNAME_S),NetBSD)
 	CXXFLAGS += -Wno-unused-parameter -Wno-macro-redefined -Wno-deprecated-declarations -Wno-character-conversion
 endif
 
-# For building on OpenBSD with clang++
+# For building on OpenBSD with clang++ or c++
 ifeq ($(UNAME_S),OpenBSD)
 	CPPFLAGS += -D_LIBCPP_ENABLE_EXPERIMENTAL
 	CXXFLAGS += -Wno-unused-parameter
