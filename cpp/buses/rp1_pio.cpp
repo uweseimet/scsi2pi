@@ -74,10 +74,7 @@ constexpr array<uint16_t, 8> TARGET_RECEIVE_PROGRAM = { 0x80a0, 0xa027, 0xe081, 
 // first REQ asserted. The host discards the dummy words.
 constexpr size_t PRIME_WORDS = 9;
 
-// pull (the byte count - 1); mov x, osr; set y, 8; prime: push; jmp y--, prime;
-// loop: set pindirs, 1 (assert REQ); wait 0 gpio ACK; in pins, 8 (4 bytes per FIFO word); set pindirs, 0 (release REQ);
-// wait 1 gpio ACK; jmp x--, loop.
-// Loaded at offset 0 because of the absolute jump targets. Stalls at "pull" when done.
+// Like the program above, with a prime loop (set y, 8; prime: push; jmp y--, prime) before the first REQ.
 constexpr array<uint16_t, 11> TARGET_RECEIVE_PRIMED_PROGRAM = { 0x80a0, 0xa027, 0xe040 | (PRIME_WORDS - 1), 0x8020, 0x0083,
     0xe081, 0x2000 | PIN_ACK | SAMPLE_DELAY, 0x4008 | (7 << 8), 0xe080, 0x2080 | PIN_ACK, 0x0045 };
 
@@ -192,7 +189,6 @@ string Rp1Pio::Init(span<volatile uint32_t> g, bool t, bool blind_writes)
     target = t;
     receive_program = blind_writes ? span<const uint16_t>(TARGET_RECEIVE_PRIMED_PROGRAM) : span<const uint16_t>(TARGET_RECEIVE_PROGRAM);
     prime_words = blind_writes ? PRIME_WORDS : 0;
-    send_origin = static_cast<uint16_t>(receive_program.size());
     pin_mask = target ? TARGET_PIN_MASK : INITIATOR_PIN_MASK;
 
     fd = open("/dev/pio0", O_RDWR | O_CLOEXEC);
@@ -236,6 +232,7 @@ string Rp1Pio::LoadPrograms()
     // The instruction memory (32 instructions) does not hold the programs of both modes, which is not an issue
     // because we are either in target or in initiator mode
     if (target) {
+        const auto send_origin = static_cast<uint16_t>(receive_program.size());
         if (add_program(receive_program, 0) < 0 || add_program(TARGET_SEND_PROGRAM, send_origin) != send_origin) {
             return "Can't load the target mode PIO programs: "s + system_error(errno, generic_category()).what();
         }
@@ -401,7 +398,7 @@ void Rp1Pio::SetUpStateMachine(bool receive)
     uint32_t signal_pinctrl;
     uint32_t execctrl_flags = 0;
     if (target) {
-        start = receive ? 0 : send_origin;
+        start = receive ? 0 : static_cast<uint16_t>(receive_program.size());
         end = start + static_cast<uint16_t>(receive ? receive_program.size() : TARGET_SEND_PROGRAM.size()) - 1;
         signal_pinctrl = SET_PIN_REQ;
     }

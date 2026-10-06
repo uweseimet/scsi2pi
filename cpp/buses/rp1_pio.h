@@ -83,10 +83,9 @@ private:
 
     bool target = true;
 
-    // Target mode: The receive program, where the send program starts behind it, and the number of dummy words the
-    // receive program pushes before the first REQ
+    // Target mode: The receive program (the send program starts behind it) and the number of dummy words it pushes
+    // before the first REQ
     span<const uint16_t> receive_program;
-    uint16_t send_origin = 0;
     size_t prime_words = 0;
 
     // The pins that are handed over to the PIO during a transfer
