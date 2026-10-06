@@ -78,7 +78,7 @@ string Pi5Bus::SetUp(bool target)
 
     if (use_pio) {
         pio = make_unique<Rp1Pio>();
-        if (const string &error = pio->Init(gpio, target, blind_writes); !error.empty()) {
+        if (const string &error = pio->Init(gpio, target, wait_for_dma); !error.empty()) {
             spdlog::error("Error: {}, using slower software handshake", error);
             pio.reset();
         }

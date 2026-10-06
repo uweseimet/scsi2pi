@@ -42,7 +42,6 @@ public:
     static constexpr const char *CONFIGURATION = "/etc/s2p.conf";
 
     // Global property keys
-    static constexpr const char *BLIND_WRITES = "blind_writes";
     static constexpr const char *CONFIG_FILES = "config_files";
     static constexpr const char *CONNECT_TYPE = "connect_type";
     static constexpr const char *ENABLE_IRQS = "enable_irqs";
@@ -59,6 +58,7 @@ public:
     static constexpr const char *SCRIPT_FILE = "script_file";
     static constexpr const char *SOFTWARE_HANDSHAKE = "software_handshake";
     static constexpr const char *TOKEN_FILE = "token_file";
+    static constexpr const char *WAIT_FOR_DMA = "wait_for_dma";
 
     // Device-specific property keys
     static constexpr const char *DEVICE = "device.";

@@ -133,9 +133,6 @@ void s2p_parser::Banner(bool usage)
     }
     else {
         cout << "Usage: s2p options ... FILE\n"
-            << "  --blind-writes                 For initiators that send DATA OUT bytes without\n"
-            << "                                 waiting for REQ (e.g. Mac Plus): do not assert the\n"
-            << "                                 first REQ before the receive DMA runs (Pi5 only).\n"
             << "  --block-size/-b BLOCK_SIZE     Optional default block size, a multiple of 4.\n"
             << "  --blue-scsi-mode/-B            Enable BlueSCSI filename compatibility mode.\n"
             << "  --caching-mode/-m MODE         Caching mode (piscsi|write-through|linux\n"
@@ -173,6 +170,9 @@ void s2p_parser::Banner(bool usage)
             << "  --token-file/-P FILE           Access token file.\n"
             << "  --type/-t DEVICE_TYPE          Optional case-insensitive device type\n"
             << "  --version/-v                   Display the s2p version.\n"
+            << "  --wait-for-dma                 For initiators that send DATA OUT bytes without\n"
+            << "                                 waiting for REQ (e.g. Mac Plus): do not assert the\n"
+            << "                                 first REQ before the receive DMA runs (Pi5 only).\n"
             << "  --zulu-scsi-mode/-Z            Enable ZuluSCSI filename compatibility mode.\n"
             << "  FILE is either a drive image file, 'daynaport', 'printer' or 'services'.\n"
             << "  If no type is specific the image type is derived from the extension:\n";
@@ -204,10 +204,9 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
     constexpr int OPT_CONFIG_FILES = 2;
     constexpr int OPT_LOG_LIMIT = 3;
     constexpr int OPT_SCSI_LEVEL = 4;
-    constexpr int OPT_BLIND_WRITES = 5;
+    constexpr int OPT_WAIT_FOR_DMA = 5;
 
     const vector<option> options = {
-        { "blind-writes", no_argument, nullptr, OPT_BLIND_WRITES },
         { "block-size", required_argument, nullptr, 'b' },
         { "blue-scsi-mode", no_argument, nullptr, 'B' },
         { "caching-mode", required_argument, nullptr, 'm' },
@@ -234,13 +233,14 @@ property_map s2p_parser::ParseArguments(span<char*> initial_args, bool &ignore_c
         { "token-file", required_argument, nullptr, 'P' },
         { "type", required_argument, nullptr, 't' },
         { "version", no_argument, nullptr, 'v' },
+        { "wait-for-dma", no_argument, nullptr, OPT_WAIT_FOR_DMA },
         { "zulu-scsi-mode", no_argument, nullptr, 'Z' },
         { nullptr, 0, nullptr, 0 }
     };
 
     // Global options
     const unordered_map<int, const char*> OPTIONS_TO_PROPERTIES = {
-        { OPT_BLIND_WRITES, PropertyHandler::BLIND_WRITES },
+        { OPT_WAIT_FOR_DMA, PropertyHandler::WAIT_FOR_DMA },
         { 'e', PropertyHandler::ENABLE_IRQS },
         { 'p', PropertyHandler::PORT },
         { 'r', PropertyHandler::RESERVED_IDS },

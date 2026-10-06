@@ -35,7 +35,7 @@ public:
 
     // The RP1 GPIO registers mapped by Pi5Bus, target mode, PIO enabled.
     // The PIO programs depend on the mode, the instruction memory is too small for both sets of programs.
-    // Blind writes (target mode): For initiators that send DATA OUT bytes without waiting for REQ, e.g. a Mac Plus.
+    // Wait for DMA (target mode): For initiators that send DATA OUT bytes without waiting for REQ, e.g. a Mac Plus.
     // The first REQ is only asserted once the receive DMA is running.
     string Init(span<volatile uint32_t>, bool, bool);
 

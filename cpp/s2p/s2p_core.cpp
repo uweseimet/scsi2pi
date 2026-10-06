@@ -45,10 +45,10 @@ string S2p::InitBus()
     }
 
     const string software_handshake = property_handler.ConsumeProperty(PropertyHandler::SOFTWARE_HANDSHAKE, "false");
-    const string blind_writes = property_handler.ConsumeProperty(PropertyHandler::BLIND_WRITES, "false");
+    const string wait_for_dma = property_handler.ConsumeProperty(PropertyHandler::WAIT_FOR_DMA, "false");
     bus = BusFactory::GetInstance().CreateBus( { .standard_board = board_type == "standard", .target_mode = true,
-        .enable_irqs = enable_irqs, .use_pio = ToLower(software_handshake) != "true", .blind_writes = ToLower(
-            blind_writes) == "true" }, APP_NAME);
+        .enable_irqs = enable_irqs, .use_pio = ToLower(software_handshake) != "true", .wait_for_dma = ToLower(
+            wait_for_dma) == "true" }, APP_NAME);
     if (!bus) {
         return "Can't initialize bus";
     }

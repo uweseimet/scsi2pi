@@ -68,7 +68,7 @@ constexpr uint16_t SAMPLE_DELAY = 31 << 8;
 constexpr array<uint16_t, 8> TARGET_RECEIVE_PROGRAM = { 0x80a0, 0xa027, 0xe081, 0x2000 | PIN_ACK | SAMPLE_DELAY, 0x4008 | (7 << 8),
     0xe080, 0x2080 | PIN_ACK, 0x0042 };
 
-// Blind writes: the RX DMA only starts after the state machine. An initiator that sends the next byte without waiting
+// Wait for DMA: the RX DMA only starts after the state machine. An initiator that sends the next byte without waiting
 // for REQ (e.g. a Mac Plus) loses bytes if REQ stays asserted while the DMA is not yet draining the FIFO. This program first
 // pushes one dummy word more than the FIFO holds. The last push completes once the DMA is reading, and only then is the
 // first REQ asserted. The host discards the dummy words.
@@ -183,12 +183,12 @@ Rp1Pio::~Rp1Pio()
     }
 }
 
-string Rp1Pio::Init(span<volatile uint32_t> g, bool t, bool blind_writes)
+string Rp1Pio::Init(span<volatile uint32_t> g, bool t, bool wait_for_dma)
 {
     gpio = g;
     target = t;
-    receive_program = blind_writes ? span<const uint16_t>(TARGET_RECEIVE_PRIMED_PROGRAM) : span<const uint16_t>(TARGET_RECEIVE_PROGRAM);
-    prime_words = blind_writes ? PRIME_WORDS : 0;
+    receive_program = wait_for_dma ? span<const uint16_t>(TARGET_RECEIVE_PRIMED_PROGRAM) : span<const uint16_t>(TARGET_RECEIVE_PROGRAM);
+    prime_words = wait_for_dma ? PRIME_WORDS : 0;
     pin_mask = target ? TARGET_PIN_MASK : INITIATOR_PIN_MASK;
 
     fd = open("/dev/pio0", O_RDWR | O_CLOEXEC);
@@ -270,7 +270,7 @@ int Rp1Pio::TargetReceive(data_in_t buf)
     Ioctl(PIO_IOC_SM_PUT, &put);
     Start();
 
-    // Four bytes per word, after the dummy words (blind writes only)
+    // Four bytes per word, after the dummy words (wait for DMA only)
     words.resize(prime_words + (buf.size() / 4));
     const size_t transferred = Transfer(RP1_PIO_DIR_FROM_SM, as_writable_bytes(span(words))) / sizeof(uint32_t);
     const size_t received = transferred > prime_words ? transferred - prime_words : 0;

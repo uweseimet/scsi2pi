@@ -3,7 +3,6 @@
 s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 .SH SYNOPSIS
 .B s2p
-[\fB\--blind-writes\fR]
 [\fB\--block-size/-b\fR \fIBLOCK_SIZE\fR]
 [\fB\--blue-scsi-mode/-B\fR]
 [\fB\--caching-mode/-m\fR \fICACHING_MODE\fR]
@@ -30,6 +29,7 @@ s2p \- Emulates SCSI and SASI devices with the Raspberry Pi
 [\fB\--token-file/-P\fR \fIACCESS_TOKEN_FILE\fR]
 [\fB\--type/-t\fR \fIDEVICE_TYPE\fR]
 [\fB\--version/-v\fR]
+[\fB\--wait-for-dma\fR]
 [\fB\--zulu-scsi-mode/-Z\fR]
 .SH DESCRIPTION
 .B s2p
@@ -59,9 +59,6 @@ When s2p starts, it opens a socket (default port is 6868) to allow external mana
 To quit s2p, press Control-C. If it is running in the background, you can kill it using an INT signal. When terminating, s2p automatically flushes all cached data.
 
 .SH OPTIONS
-.TP
-.BR --blind-writes
-On the Pi5, for initiators that send DATA OUT bytes without waiting for REQ for each byte (e.g. the Mac Plus with its blind writes): do not assert the first REQ of a DATA OUT transfer before the receive DMA is running. Without this option, such initiators may lose data. Not required for initiators that follow the REQ/ACK handshake.
 .TP
 .BR --block-size/-b\fI " " \fIBLOCK_SIZE
 The optional default block size. The default size for SASI hard drives is 256 bytes, for other devices it is 512 bytes. There is no upper limit.
@@ -150,6 +147,9 @@ The optional case-insensitive device type (SAHD, SCCD, SCDP, SCHD, SCHS, SCLP, S
 .TP
 .BR --version/-v\fI " " \fI
 Displays the s2p version.
+.TP
+.BR --wait-for-dma
+On the Pi5, for initiators that send DATA OUT bytes without waiting for REQ for each byte (e.g. the Mac Plus with its blind writes): do not assert the first REQ of a DATA OUT transfer before the receive DMA is running. Without this option, such initiators may lose data. Not required for initiators that follow the REQ/ACK handshake.
 .TP
 .BR --zulu-scsi-mode/-Z\fI " " \fI
 The same as the BlueSCSI compatibility mode, because both modes are compatible.

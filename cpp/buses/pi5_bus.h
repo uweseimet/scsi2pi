@@ -20,7 +20,7 @@ class Pi5Bus final : public GpioBus
 public:
 
     explicit Pi5Bus(Bus::BusProperties p) : GpioBus(p.standard_board), target_mode(p.target_mode), use_pio(p.use_pio),
-        blind_writes(p.blind_writes)
+        wait_for_dma(p.wait_for_dma)
     {
     }
 
@@ -92,7 +92,7 @@ private:
 
     bool use_pio;
 
-    bool blind_writes;
+    bool wait_for_dma;
 
     static constexpr size_t MAP_SIZE = 0x30000;
 

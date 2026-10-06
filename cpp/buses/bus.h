@@ -28,7 +28,7 @@ public:
         bool target_mode = false;
         bool enable_irqs = false;
         bool use_pio = false;
-        bool blind_writes = false;
+        bool wait_for_dma = false;
     };
 
     virtual ~Bus() = default;
