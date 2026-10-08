@@ -247,7 +247,7 @@ class MockDisk : public Disk
     FRIEND_TEST(DiskTest, ModeSense10);
     FRIEND_TEST(DiskTest, SynchronizeCache10);
     FRIEND_TEST(DiskTest, SynchronizeCache16);
-    FRIEND_TEST(DiskTest, ReadDefectData);
+    FRIEND_TEST(DiskTest, ReadDefectData10);
     FRIEND_TEST(DiskTest, ChangeBlockSize);
 
 public:

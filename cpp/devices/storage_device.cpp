@@ -163,7 +163,7 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length)
 
     // Parse the pages
     while (length > 0) {
-        const auto page_code = static_cast<int>(byte { buf[offset] } & byte { 0x3f });
+        const auto page_code = to_underlying(byte { buf[offset] } & byte { 0x3f });
 
         const auto &it = pages.find(page_code);
         if (it == pages.end()) {

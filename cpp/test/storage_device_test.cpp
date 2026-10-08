@@ -107,7 +107,6 @@ TEST(StorageDeviceTest, StartStopUnit)
     device->SetRemovable(true);
 
     // Stop/Unload
-    device->SetReady(true);
     EXPECT_CALL(*controller, Status);
     Dispatch(device, START_STOP);
     EXPECT_EQ(GOOD, controller->GetStatus());

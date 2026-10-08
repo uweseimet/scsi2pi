@@ -763,7 +763,7 @@ TEST(DiskTest, SynchronizeCache16)
     EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
-TEST(DiskTest, ReadDefectData)
+TEST(DiskTest, ReadDefectData10)
 {
     auto [controller, disk] = CreateDisk();
 

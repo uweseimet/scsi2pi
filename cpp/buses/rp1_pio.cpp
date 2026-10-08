@@ -57,14 +57,11 @@ constexpr array<uint16_t, 11> TARGET_SEND_PROGRAM = { 0x80a0, 0x6089 | SETTLE_DE
     | SETTLE_DELAY, 0xa042 | SETTLE_DELAY, 0xa042 | SETTLE_DELAY, 0xa042 | SETTLE_DELAY, 0xe081, 0x2000 | PIN_ACK,
     0xe080, 0x2080 | PIN_ACK };
 
-// 31 delay cycles (155 ns) between ACK and sampling the data pins, because some data lines settle later than ACK
-constexpr uint16_t SAMPLE_DELAY = 31 << 8;
-
 // pull (the byte count - 1); mov x, osr; loop: set pindirs, 1 (assert REQ); wait 0 gpio ACK; in pins, 8 (4 bytes per
 // FIFO word); set pindirs, 0 (release REQ); wait 1 gpio ACK; jmp x--, loop.
 // Loaded at offset 0 because of the absolute jump target. Stalls at "pull" when done.
-constexpr array<uint16_t, 8> TARGET_RECEIVE_PROGRAM = { 0x80a0, 0xa027, 0xe081, 0x2000 | PIN_ACK | SAMPLE_DELAY, 0x4008 | (7 << 8),
-    0xe080, 0x2080 | PIN_ACK, 0x0042 };
+constexpr array<uint16_t, 8> TARGET_RECEIVE_PROGRAM = { 0x80a0, 0xa027, 0xe081, 0x2000 | PIN_ACK, 0x4008 | (7 << 8), 0xe080,
+    0x2080 | PIN_ACK, 0x0042 };
 
 constexpr uint16_t TARGET_SEND_ORIGIN = TARGET_RECEIVE_PROGRAM.size();
 
