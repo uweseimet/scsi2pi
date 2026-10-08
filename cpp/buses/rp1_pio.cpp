@@ -50,6 +50,9 @@ constexpr auto HANDSHAKE_TIMEOUT = chrono::seconds(1);
 // 31 delay cycles per instruction at 200 MHz, i.e. 6 x 32 cycles (~1 us) between setting the data and REQ
 constexpr uint16_t SETTLE_DELAY = 31 << 8;
 
+// 31 delay cycles (155 ns) between ACK and sampling the data pins, because some data lines settle later than ACK
+constexpr uint16_t SAMPLE_DELAY = 31 << 8;
+
 // pull; out pindirs, 9 (assert the data and parity bits); settle; set pindirs, 1 (assert REQ);
 // wait 0 gpio ACK; set pindirs, 0 (release REQ); wait 1 gpio ACK
 // loaded directly behind the receive program
