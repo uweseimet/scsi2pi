@@ -169,7 +169,7 @@ bool Disk::SetUpCache()
 {
     assert(caching_mode != PbCachingMode::DEFAULT);
 
-    if (!GetSupportedBlockSizes().contains(GetBlockSize())) {
+    if (GetBlockSize() % 512 || !GetSupportedBlockSizes().contains(GetBlockSize())) {
         warn("Using non-standard sector size of {} bytes", GetBlockSize());
         if (caching_mode == PbCachingMode::PISCSI) {
             caching_mode = PbCachingMode::LINUX;
@@ -527,7 +527,7 @@ void Disk::ReadFormatCapacities()
         }
     }
 
-    buf[3] = offset - 4;
+    buf[3] = static_cast<uint8_t>(offset - 4);
 
     DataInPhase(min(offset, GetCdbInt16(7)));
 }
