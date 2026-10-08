@@ -87,6 +87,14 @@ TEST(DiskTest, FormatUnit)
     // FMTDATA
     controller->SetCdbByte(1, 0x10);
     Dispatch(disk, ScsiCommand::FORMAT, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+
+    // CmpList
+    controller->SetCdbByte(1, 0x08);
+    Dispatch(disk, ScsiCommand::FORMAT, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+
+    // Defect List Format
+    controller->SetCdbByte(1, 0x07);
+    Dispatch(disk, ScsiCommand::FORMAT, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
 }
 
 TEST(DiskTest, ReassignBlocks)
@@ -778,9 +786,14 @@ TEST(DiskTest, ReadDefectData)
         "READ DEFECT DATA(10) must fail because drive is not ready");
     disk->SetReady(true);
 
-    EXPECT_CALL(*controller, DataIn);
+    // Plist, Glist and a reserved bit
+    controller->SetCdbByte(2, 0x58);
+    // Allocation length
+    controller->SetCdbByte(8, 255);
     Dispatch(disk, ScsiCommand::READ_DEFECT_DATA_10);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(0x00, controller->GetBuffer()[0]);
+    EXPECT_EQ(0x18, controller->GetBuffer()[1]);
+    EXPECT_EQ(0, GetInt16(controller->GetBuffer(), 2));
 }
 
 TEST(DiskTest, ChangeBlockSize)

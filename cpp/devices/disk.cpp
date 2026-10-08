@@ -205,8 +205,8 @@ void Disk::FormatUnit()
 {
     CheckReady();
 
-    // FMTDATA is not supported
-    if (GetCdbByte(1) & 0x10) {
+    // FMTDATA (0x10) is unsupported, and if FMTDATA is 0, CmpList and Defect List Format must also be 0
+    if (GetCdbByte(1) & 0x1f) {
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
@@ -334,14 +334,16 @@ void Disk::ReadDefectData10()
 {
     CheckReady();
 
-    const int allocation_length = min(GetCdbInt16(7), 4);
+    const int transfer_length = min(GetCdbInt16(7), 4);
 
-    GetController()->SetCurrentLength(allocation_length);
+    auto &buf = GetController()->GetBuffer();
 
-    // The defect list is empty
-    fill_n(GetController()->GetBuffer().begin(), allocation_length, 0);
+    // Length 0 (no defects)
+    fill_n(buf.begin(), transfer_length, 0);
+    buf[1] = GetCdbByte(2) & 0x1f;
 
-    DataInPhase(allocation_length);
+    GetController()->SetCurrentLength(transfer_length);
+    DataInPhase(transfer_length);
 }
 
 bool Disk::Eject(bool force)
@@ -511,6 +513,7 @@ void Disk::ReadFormatCapacities()
     CheckReady();
 
     auto &buf = GetController()->GetBuffer();
+    SetInt32(buf, 0, 0);
     SetInt32(buf, 4, static_cast<uint32_t>(GetBlockCount()));
     SetInt32(buf, 8, GetBlockSize());
 
@@ -524,7 +527,7 @@ void Disk::ReadFormatCapacities()
         }
     }
 
-    SetInt32(buf, 0, offset - 4);
+    buf[3] = offset - 4;
 
     DataInPhase(min(offset, GetCdbInt16(7)));
 }
@@ -620,7 +623,8 @@ pair<uint64_t, uint32_t> Disk::CheckAndGetStartAndCount()
     // Accessing sector 0 without a data transfer is always allowed
     if (start || count) {
         // Check capacity
-        if (const uint64_t capacity = GetBlockCount(); start >= capacity || start + count > capacity) {
+        if (const uint64_t capacity = GetBlockCount(); start >= capacity || count > capacity
+            || start > capacity - count) {
             LogTrace(
                 fmt::format("Capacity of {} sector(s) exceeded: Trying to access sector {}, sector count {}", capacity,
                     start, count));

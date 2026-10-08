@@ -346,9 +346,6 @@ TEST(PrimaryDeviceTest, RequestSense)
     controller->SetCdbByte(4, 255);
     Dispatch(device, ScsiCommand::REQUEST_SENSE, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
 
-    device->SetReady(false);
-    Dispatch(device, ScsiCommand::REQUEST_SENSE, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
-
     device->SetReady(true);
     RequestSense(controller, device);
     EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
@@ -416,8 +413,6 @@ TEST(PrimaryDeviceTest, SendDiagnostic)
 {
     auto [controller, device] = CreatePrimaryDevice();
 
-    device->SetReady(false);
-    Dispatch(device, ScsiCommand::REQUEST_SENSE, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
     device->SetReady(true);
 
     EXPECT_CALL(*controller, Status);

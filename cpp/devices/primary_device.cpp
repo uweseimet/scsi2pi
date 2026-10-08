@@ -360,11 +360,6 @@ vector<uint8_t> PrimaryDevice::HandleInquiry() const
 
 vector<byte> PrimaryDevice::HandleRequestSense() const
 {
-    // Return not ready only if there are no errors
-    if (sense_key == SenseKey::NO_SENSE && !IsReady()) {
-        throw ScsiException(SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
-    }
-
     vector<byte> buf(18);
 
     // In SCSI-1 mode, only return the extended format if more than 4 bytes have been requested
