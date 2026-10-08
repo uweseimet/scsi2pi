@@ -41,12 +41,24 @@ string PrimaryDevice::Init()
         });
     AddCommand(ScsiCommand::RESERVE_RESERVE_ELEMENT_6, [this]
         {
+            // 3rdPty, third-party device ID and Extent are not supported
+            if (GetCdbByte(1) & 0x1f) {
+                throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
+            }
+
             reserving_initiator = controller->GetInitiatorId();
             StatusPhase();
         });
     AddCommand(ScsiCommand::RELEASE_RELEASE_ELEMENT_6, [this]
         {
-            DiscardReservation();
+            // 3rdPty, third-party device ID and Extent are not supported
+            if (GetCdbByte(1) & 0x1f) {
+                throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
+            }
+
+            if (controller->GetInitiatorId() == reserving_initiator) {
+                DiscardReservation();
+            }
             StatusPhase();
         });
     AddCommand(ScsiCommand::SEND_DIAGNOSTIC, [this]
@@ -219,7 +231,7 @@ void PrimaryDevice::Inquiry()
 
     const auto &buf = HandleInquiry();
 
-    const int allocation_length = min(static_cast<int>(buf.size()), GetCdbInt16(3));
+    const int allocation_length = min(static_cast<int>(buf.size()), GetCdbByte(4));
 
     controller->CopyToBuffer(span(buf.data(), allocation_length));
 

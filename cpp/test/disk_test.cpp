@@ -61,8 +61,7 @@ TEST(DiskTest, Rezero)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, REZERO_REWIND, NOT_READY, MEDIUM_NOT_PRESENT,
-        "REZERO must fail because drive is not ready");
+    Dispatch(disk, REZERO_REWIND, NOT_READY, MEDIUM_NOT_PRESENT, "REZERO must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -75,8 +74,7 @@ TEST(DiskTest, FormatUnit)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, FORMAT, NOT_READY, MEDIUM_NOT_PRESENT,
-        "FORMAT UNIT must fail because drive is not ready");
+    Dispatch(disk, FORMAT, NOT_READY, MEDIUM_NOT_PRESENT, "FORMAT UNIT must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -93,8 +91,7 @@ TEST(DiskTest, ReassignBlocks)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, REASSIGN_BLOCKS, NOT_READY, MEDIUM_NOT_PRESENT,
-        "REASSIGN must fail because drive is not ready");
+    Dispatch(disk, REASSIGN_BLOCKS, NOT_READY, MEDIUM_NOT_PRESENT, "REASSIGN must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -107,8 +104,7 @@ TEST(DiskTest, Seek6)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, SEEK_6, NOT_READY, MEDIUM_NOT_PRESENT,
-        "SEEK(6) must fail because drive is not ready");
+    Dispatch(disk, SEEK_6, NOT_READY, MEDIUM_NOT_PRESENT, "SEEK(6) must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -129,8 +125,7 @@ TEST(DiskTest, Seek10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, SEEK_10, NOT_READY, MEDIUM_NOT_PRESENT,
-        "SEEK(10) must fail because drive is not ready");
+    Dispatch(disk, SEEK_10, NOT_READY, MEDIUM_NOT_PRESENT, "SEEK(10) must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -244,13 +239,11 @@ TEST(DiskTest, Read6)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, READ_6, NOT_READY, MEDIUM_NOT_PRESENT,
-        "READ(6) must fail because drive is not ready");
+    Dispatch(disk, READ_6, NOT_READY, MEDIUM_NOT_PRESENT, "READ(6) must fail because drive is not ready");
 
     disk->SetReady(true);
 
-    Dispatch(disk, READ_6, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
-        "READ(6) must fail for a medium with 0 blocks");
+    Dispatch(disk, READ_6, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE, "READ(6) must fail for a medium with 0 blocks");
 
     EXPECT_EQ(0U, disk->GetNextSector());
 
@@ -271,8 +264,7 @@ TEST(DiskTest, Read10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, READ_10, NOT_READY, MEDIUM_NOT_PRESENT,
-        "READ(10) must fail because drive is not ready");
+    Dispatch(disk, READ_10, NOT_READY, MEDIUM_NOT_PRESENT, "READ(10) must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -296,8 +288,7 @@ TEST(DiskTest, Read16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, READ_16, NOT_READY, MEDIUM_NOT_PRESENT,
-        "READ(16) must fail because drive is not ready");
+    Dispatch(disk, READ_16, NOT_READY, MEDIUM_NOT_PRESENT, "READ(16) must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -321,20 +312,17 @@ TEST(DiskTest, Write6)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, WRITE_6, NOT_READY, MEDIUM_NOT_PRESENT,
-        "WRITE(6) must fail because drive is not ready");
+    Dispatch(disk, WRITE_6, NOT_READY, MEDIUM_NOT_PRESENT, "WRITE(6) must fail because drive is not ready");
 
     disk->SetReady(true);
     disk->SetProtectable(true);
     disk->SetProtected(true);
 
-    Dispatch(disk, WRITE_6, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
-        "WRITE(6) must fail for a medium with 0 blocks");
+    Dispatch(disk, WRITE_6, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE, "WRITE(6) must fail for a medium with 0 blocks");
 
     disk->SetBlockCount(1);
     controller->SetCdbByte(4, 1);
-    Dispatch(disk, WRITE_6, DATA_PROTECT, WRITE_PROTECTED,
-        "WRITE(6) must fail because drive is write-protected");
+    Dispatch(disk, WRITE_6, DATA_PROTECT, WRITE_PROTECTED, "WRITE(6) must fail because drive is write-protected");
 
     EXPECT_EQ(0U, disk->GetNextSector());
 
@@ -355,8 +343,7 @@ TEST(DiskTest, Write10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, WRITE_10, NOT_READY, MEDIUM_NOT_PRESENT,
-        "WRITE(10) must fail because drive is not ready");
+    Dispatch(disk, WRITE_10, NOT_READY, MEDIUM_NOT_PRESENT, "WRITE(10) must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -387,8 +374,7 @@ TEST(DiskTest, Write16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, WRITE_16, NOT_READY, MEDIUM_NOT_PRESENT,
-        "WRITE(16) must fail because drive is not ready");
+    Dispatch(disk, WRITE_16, NOT_READY, MEDIUM_NOT_PRESENT, "WRITE(16) must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -419,10 +405,12 @@ TEST(DiskTest, Verify10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, VERIFY_10, NOT_READY, MEDIUM_NOT_PRESENT,
-        "VERIFY(10) must fail because drive is not ready");
+    Dispatch(disk, VERIFY_10, NOT_READY, MEDIUM_NOT_PRESENT, "VERIFY(10) must fail because drive is not ready");
 
     disk->SetReady(true);
+
+    // BytChk
+    controller->SetCdbByte(1, 0x02);
 
     // Verifying 0 sectors for a medium with 0 blocks must succeed
     Dispatch(disk, VERIFY_10);
@@ -439,8 +427,7 @@ TEST(DiskTest, Verify16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, VERIFY_16, NOT_READY, MEDIUM_NOT_PRESENT,
-        "VERIFY(16) must fail because drive is not ready");
+    Dispatch(disk, VERIFY_16, NOT_READY, MEDIUM_NOT_PRESENT, "VERIFY(16) must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -459,8 +446,7 @@ TEST(DiskTest, ReadLong10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, READ_LONG_10, NOT_READY, MEDIUM_NOT_PRESENT,
-        "READ LONG(10) must fail because drive is not ready");
+    Dispatch(disk, READ_LONG_10, NOT_READY, MEDIUM_NOT_PRESENT, "READ LONG(10) must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -602,8 +588,7 @@ TEST(DiskTest, WriteLong16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, WRITE_LONG_16, NOT_READY, MEDIUM_NOT_PRESENT,
-        "WRITE LONG(16) must fail because drive is not ready");
+    Dispatch(disk, WRITE_LONG_16, NOT_READY, MEDIUM_NOT_PRESENT, "WRITE LONG(16) must fail because drive is not ready");
 
     disk->SetReady(true);
 
