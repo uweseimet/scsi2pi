@@ -74,7 +74,7 @@ CommandMetaData::CommandMetaData()
     AddCommand(WRITE_AND_VERIFY_10, 10, "WRITE AND VERIFY(10)", { 7, 2, 2, 4, true, false });
     AddCommand(VERIFY_10, 10, "VERIFY(10)", { 7, 2, 2, 4, true, false });
     AddCommand(READ_POSITION, 10, "READ POSITION", { -20, 0, 0, 0, false, false });
-    AddCommand(SYNCHRONIZE_CACHE_10, 10, "SYNCHRONIZE CACHE(10)", { 0, 0, 0, 0, false, false });
+    AddCommand(SYNCHRONIZE_CACHE_10, 10, "SYNCHRONIZE CACHE(10)", { 7, 2, 2, 4, false, false });
     AddCommand(READ_DEFECT_DATA_10, 10, "READ DEFECT DATA(10)", { 7, 2, 0, 0, false, false });
     AddCommand(MEDIUM_SCAN, 10, "MEDIUM SCAN", { 8, 1, 2, 4, true, false });
     AddCommand(WRITE_BUFFER, 10, "WRITE BUFFER", { 6, 3, 0, 0, true, false });
@@ -110,7 +110,7 @@ CommandMetaData::CommandMetaData()
     AddCommand(WRITE_16, 16, "WRITE(16)", { 10, 4, 2, 8, true, false });
     AddCommand(WRITE_AND_VERIFY_16, 16, "WRITE AND VERIFY(16)", { 10, 4, 2, 8, true, false });
     AddCommand(VERIFY_16, 16, "VERIFY(16)", { 10, 4, 2, 8, true, false });
-    AddCommand(SYNCHRONIZE_CACHE_SPACE_16, 16, "SYNCHRONIZE CACHE(16)/SPACE(16)", { 0, 0, 0, 0, false, false });
+    AddCommand(SYNCHRONIZE_CACHE_SPACE_16, 16, "SYNCHRONIZE CACHE(16)/SPACE(16)", { 10, 4, 2, 8, false, false });
     AddCommand(LOCATE_16, 16, "LOCATE(16)", { 0, 0, 0, 0, false, false });
     AddCommand(ERASE_WRITE_SAME_16, 16, "ERASE(16)/WRITE SAME(16)", { 10, 4, 2, 8, false, false });
     AddCommand(READ_BUFFER_16, 16, "READ BUFFER(16)", { 10, 4, 0, 0, false, false });

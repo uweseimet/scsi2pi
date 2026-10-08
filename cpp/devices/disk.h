@@ -66,7 +66,7 @@ protected:
 private:
 
     // Commands covered by the SCSI specifications (see https://www.t10.org/drafts.htm)
-    void ReadDefectData10() const;
+    void ReadDefectData10();
     void ReadCapacity10();
     void ReadCapacity16();
     void ReadFormatCapacities();

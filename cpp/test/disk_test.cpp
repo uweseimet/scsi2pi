@@ -721,6 +721,15 @@ TEST(DiskTest, SynchronizeCache10)
 {
     auto [controller, disk] = CreateDisk();
 
+    Dispatch(disk, SYNCHRONIZE_CACHE_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
+        "SYNCHRONIZE CACHE(10) must fail because drive is not ready");
+    disk->SetReady(true);
+
+    controller->SetCdbByte(8, 1);
+    Dispatch(disk, SYNCHRONIZE_CACHE_10, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
+        "SYNCHRONIZE CACHE(10) must fail because the capacity is exceeded");
+
+    disk->SetBlockCount(1);
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
     Dispatch(disk, SYNCHRONIZE_CACHE_10);
@@ -731,6 +740,15 @@ TEST(DiskTest, SynchronizeCache16)
 {
     auto [controller, disk] = CreateDisk();
 
+    Dispatch(disk, SYNCHRONIZE_CACHE_SPACE_16, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
+        "SYNCHRONIZE CACHE(16) must fail because drive is not ready");
+    disk->SetReady(true);
+
+    controller->SetCdbByte(13, 1);
+    Dispatch(disk, SYNCHRONIZE_CACHE_SPACE_16, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
+        "SYNCHRONIZE CACHE(16) must fail because the capacity is exceeded");
+
+    disk->SetBlockCount(1);
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
     Dispatch(disk, SYNCHRONIZE_CACHE_SPACE_16);
@@ -740,6 +758,10 @@ TEST(DiskTest, SynchronizeCache16)
 TEST(DiskTest, ReadDefectData)
 {
     auto [controller, disk] = CreateDisk();
+
+    Dispatch(disk, READ_DEFECT_DATA_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
+        "READ DEFECT DATA(10) must fail because drive is not ready");
+    disk->SetReady(true);
 
     EXPECT_CALL(*controller, DataIn);
     Dispatch(disk, READ_DEFECT_DATA_10);
