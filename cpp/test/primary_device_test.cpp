@@ -346,9 +346,6 @@ TEST(PrimaryDeviceTest, RequestSense)
     controller->SetCdbByte(4, 255);
     Dispatch(device, REQUEST_SENSE, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
 
-    device->SetReady(false);
-    Dispatch(device, REQUEST_SENSE, NOT_READY, MEDIUM_NOT_PRESENT);
-
     device->SetReady(true);
     RequestSense(controller, device);
     EXPECT_EQ(GOOD, controller->GetStatus());
@@ -416,8 +413,6 @@ TEST(PrimaryDeviceTest, SendDiagnostic)
 {
     auto [controller, device] = CreatePrimaryDevice();
 
-    device->SetReady(false);
-    Dispatch(device, REQUEST_SENSE, NOT_READY, MEDIUM_NOT_PRESENT);
     device->SetReady(true);
 
     EXPECT_CALL(*controller, Status);

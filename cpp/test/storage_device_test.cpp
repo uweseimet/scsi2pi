@@ -446,6 +446,7 @@ TEST(StorageDeviceTest, ModeSense6)
     controller->SetCdbByte(4, 12);
     device->SetBlockSize(1024);
     Dispatch(device, MODE_SENSE_6);
+    EXPECT_EQ(11, controller->GetBuffer()[0]) << "Wrong mode data length";
     EXPECT_EQ(8, controller->GetBuffer()[3]) << "Wrong block descriptor length";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
 
@@ -455,6 +456,7 @@ TEST(StorageDeviceTest, ModeSense6)
     controller->SetCdbByte(4, 12);
     device->SetBlockSize(1024);
     Dispatch(device, MODE_SENSE_6);
+    EXPECT_EQ(11, controller->GetBuffer()[0]) << "Wrong mode data length";
     EXPECT_EQ(8, controller->GetBuffer()[3]) << "Wrong block descriptor length";
     EXPECT_EQ(0x0000ffffU, GetInt32(controller->GetBuffer(), 8)) << "Wrong changeable block size";
 
@@ -464,6 +466,7 @@ TEST(StorageDeviceTest, ModeSense6)
     device->SetBlockCount(0x00000001);
     device->SetBlockSize(1024);
     Dispatch(device, MODE_SENSE_6);
+    EXPECT_EQ(47, controller->GetBuffer()[0]) << "Wrong mode data length";
     EXPECT_EQ(8, controller->GetBuffer()[3]) << "Wrong block descriptor length";
     EXPECT_EQ(0x00000001U, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
@@ -473,6 +476,7 @@ TEST(StorageDeviceTest, ModeSense6)
     controller->SetCdbByte(4, 255);
     device->SetBlockCount(0xffffffff);
     Dispatch(device, MODE_SENSE_6);
+    EXPECT_EQ(47, controller->GetBuffer()[0]) << "Wrong mode data length";
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
 
@@ -481,6 +485,7 @@ TEST(StorageDeviceTest, ModeSense6)
     controller->SetCdbByte(4, 255);
     device->SetBlockCount(0x100000000);
     Dispatch(device, MODE_SENSE_6);
+    EXPECT_EQ(47, controller->GetBuffer()[0]) << "Wrong mode data length";
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
 
@@ -527,6 +532,7 @@ TEST(StorageDeviceTest, ModeSense10)
     controller->SetCdbByte(4, 12);
     device->SetBlockSize(1024);
     Dispatch(device, MODE_SENSE_10);
+    EXPECT_EQ(14, GetInt16(controller->GetBuffer(), 0)) << "Wrong mode data length";
     EXPECT_EQ(8, controller->GetBuffer()[7]) << "Wrong block descriptor length";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
 
@@ -536,6 +542,7 @@ TEST(StorageDeviceTest, ModeSense10)
     controller->SetCdbByte(4, 8);
     device->SetBlockSize(1024);
     Dispatch(device, MODE_SENSE_10);
+    EXPECT_EQ(14, GetInt16(controller->GetBuffer(), 0)) << "Wrong mode data length";
     EXPECT_EQ(8, controller->GetBuffer()[7]) << "Wrong block descriptor length";
     EXPECT_EQ(0x0000ffffU, GetInt32(controller->GetBuffer(), 12)) << "Wrong changeable block size";
 
@@ -545,6 +552,7 @@ TEST(StorageDeviceTest, ModeSense10)
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 255);
     Dispatch(device, MODE_SENSE_10);
+    EXPECT_EQ(50, GetInt16(controller->GetBuffer(), 0)) << "Wrong mode data length";
     EXPECT_EQ(8, controller->GetBuffer()[7]) << "Wrong block descriptor length";
     EXPECT_EQ(0x00000001U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
@@ -554,6 +562,7 @@ TEST(StorageDeviceTest, ModeSense10)
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 255);
     Dispatch(device, MODE_SENSE_10);
+    EXPECT_EQ(50, GetInt16(controller->GetBuffer(), 0)) << "Wrong mode data length";
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
 
@@ -562,6 +571,7 @@ TEST(StorageDeviceTest, ModeSense10)
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 255);
     Dispatch(device, MODE_SENSE_10);
+    EXPECT_EQ(50, GetInt16(controller->GetBuffer(), 0)) << "Wrong mode data length";
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
 
@@ -571,6 +581,7 @@ TEST(StorageDeviceTest, ModeSense10)
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 255);
     Dispatch(device, MODE_SENSE_10);
+    EXPECT_EQ(58, GetInt16(controller->GetBuffer(), 0)) << "Wrong mode data length";
     EXPECT_EQ(0x100000000U, GetInt64(controller->GetBuffer(), 8)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 20)) << "Wrong block size";
     EXPECT_EQ(0x01, controller->GetBuffer()[4]) << "LLBAA is not set";
