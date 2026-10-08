@@ -83,7 +83,7 @@ TEST(StorageDeviceTest, PreventAllowMediumRemoval)
 {
     auto [controller, device] = CreateStorageDevice();
 
-    Dispatch(device, PREVENT_ALLOW_MEDIUM_REMOVAL, NOT_READY, MEDIUM_NOT_PRESENT,
+    Dispatch(device, PREVENT_ALLOW_MEDIUM_REMOVAL, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
         "PREVENT/ALLOW MEDIUM REMOVAL must fail because device is not ready");
 
     device->SetReady(true);

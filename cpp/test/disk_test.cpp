@@ -61,7 +61,7 @@ TEST(DiskTest, Rezero)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, REZERO_REWIND, NOT_READY, MEDIUM_NOT_PRESENT, "REZERO must fail because drive is not ready");
+    Dispatch(disk, REZERO_REWIND, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "REZERO must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -74,7 +74,7 @@ TEST(DiskTest, FormatUnit)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, FORMAT, NOT_READY, MEDIUM_NOT_PRESENT, "FORMAT UNIT must fail because drive is not ready");
+    Dispatch(disk, FORMAT, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "FORMAT UNIT must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -91,7 +91,7 @@ TEST(DiskTest, ReassignBlocks)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, REASSIGN_BLOCKS, NOT_READY, MEDIUM_NOT_PRESENT, "REASSIGN must fail because drive is not ready");
+    Dispatch(disk, REASSIGN_BLOCKS, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "REASSIGN must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -104,7 +104,7 @@ TEST(DiskTest, Seek6)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, SEEK_6, NOT_READY, MEDIUM_NOT_PRESENT, "SEEK(6) must fail because drive is not ready");
+    Dispatch(disk, SEEK_6, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "SEEK(6) must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -125,7 +125,7 @@ TEST(DiskTest, Seek10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, SEEK_10, NOT_READY, MEDIUM_NOT_PRESENT, "SEEK(10) must fail because drive is not ready");
+    Dispatch(disk, SEEK_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "SEEK(10) must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -146,7 +146,7 @@ TEST(DiskTest, ReadCapacity10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, READ_CAPACITY_10, NOT_READY, MEDIUM_NOT_PRESENT,
+    Dispatch(disk, READ_CAPACITY_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
         "READ CAPACITY(10) must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -176,7 +176,7 @@ TEST(DiskTest, ReadCapacity16)
 
     // Service action: READ CAPACITY(16), not READ LONG(16)
     controller->SetCdbByte(1, 0x10);
-    Dispatch(disk, READ_CAPACITY_READ_LONG_16, NOT_READY, MEDIUM_NOT_PRESENT,
+    Dispatch(disk, READ_CAPACITY_READ_LONG_16, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
         "READ CAPACITY(16) must fail because drive is not ready");
 
     // Service action: READ CAPACITY(16), not READ LONG(16)
@@ -203,7 +203,7 @@ TEST(DiskTest, ReadFormatCapacities)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, READ_FORMAT_CAPACITIES, NOT_READY, MEDIUM_NOT_PRESENT,
+    Dispatch(disk, READ_FORMAT_CAPACITIES, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
         "READ FORMAT CAPACITIES must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -239,7 +239,7 @@ TEST(DiskTest, Read6)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, READ_6, NOT_READY, MEDIUM_NOT_PRESENT, "READ(6) must fail because drive is not ready");
+    Dispatch(disk, READ_6, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "READ(6) must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -264,7 +264,7 @@ TEST(DiskTest, Read10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, READ_10, NOT_READY, MEDIUM_NOT_PRESENT, "READ(10) must fail because drive is not ready");
+    Dispatch(disk, READ_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "READ(10) must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -288,7 +288,7 @@ TEST(DiskTest, Read16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, READ_16, NOT_READY, MEDIUM_NOT_PRESENT, "READ(16) must fail because drive is not ready");
+    Dispatch(disk, READ_16, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "READ(16) must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -312,7 +312,7 @@ TEST(DiskTest, Write6)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, WRITE_6, NOT_READY, MEDIUM_NOT_PRESENT, "WRITE(6) must fail because drive is not ready");
+    Dispatch(disk, WRITE_6, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "WRITE(6) must fail because drive is not ready");
 
     disk->SetReady(true);
     disk->SetProtectable(true);
@@ -343,7 +343,7 @@ TEST(DiskTest, Write10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, WRITE_10, NOT_READY, MEDIUM_NOT_PRESENT, "WRITE(10) must fail because drive is not ready");
+    Dispatch(disk, WRITE_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "WRITE(10) must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -374,7 +374,7 @@ TEST(DiskTest, Write16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, WRITE_16, NOT_READY, MEDIUM_NOT_PRESENT, "WRITE(16) must fail because drive is not ready");
+    Dispatch(disk, WRITE_16, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "WRITE(16) must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -405,7 +405,7 @@ TEST(DiskTest, Verify10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, VERIFY_10, NOT_READY, MEDIUM_NOT_PRESENT, "VERIFY(10) must fail because drive is not ready");
+    Dispatch(disk, VERIFY_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "VERIFY(10) must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -427,7 +427,7 @@ TEST(DiskTest, Verify16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, VERIFY_16, NOT_READY, MEDIUM_NOT_PRESENT, "VERIFY(16) must fail because drive is not ready");
+    Dispatch(disk, VERIFY_16, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "VERIFY(16) must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -446,7 +446,7 @@ TEST(DiskTest, ReadLong10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, READ_LONG_10, NOT_READY, MEDIUM_NOT_PRESENT, "READ LONG(10) must fail because drive is not ready");
+    Dispatch(disk, READ_LONG_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "READ LONG(10) must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -493,7 +493,7 @@ TEST(DiskTest, ReadLong16)
 
     // Service action: READ LONG(16), not READ CAPACITY(16)
     controller->SetCdbByte(1, 0x11);
-    Dispatch(disk, READ_CAPACITY_READ_LONG_16, NOT_READY, MEDIUM_NOT_PRESENT,
+    Dispatch(disk, READ_CAPACITY_READ_LONG_16, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
         "READ LONG(16) must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -542,7 +542,7 @@ TEST(DiskTest, WriteLong10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, WRITE_LONG_10, NOT_READY, MEDIUM_NOT_PRESENT,
+    Dispatch(disk, WRITE_LONG_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
         "WRITE LONG(10) must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -588,7 +588,7 @@ TEST(DiskTest, WriteLong16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, WRITE_LONG_16, NOT_READY, MEDIUM_NOT_PRESENT, "WRITE LONG(16) must fail because drive is not ready");
+    Dispatch(disk, WRITE_LONG_16, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "WRITE LONG(16) must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -705,7 +705,7 @@ TEST(DiskTest, ReadData)
 
     EXPECT_THAT([&] {disk.ReadData( {});}, Throws<ScsiException>(AllOf(
                 Property(&ScsiException::GetSenseKey, NOT_READY),
-                Property(&ScsiException::GetAsc, MEDIUM_NOT_PRESENT)))) << "Disk is not ready";
+                Property(&ScsiException::GetAsc, INITIALIZING_COMMAND_REQUIRED)))) << "Disk is not ready";
 }
 
 TEST(DiskTest, WriteData)
@@ -714,7 +714,7 @@ TEST(DiskTest, WriteData)
 
     EXPECT_THAT([&] {disk.WriteData( {}, {}, 0);}, Throws<ScsiException>(AllOf(
                 Property(&ScsiException::GetSenseKey, NOT_READY),
-                Property(&ScsiException::GetAsc, MEDIUM_NOT_PRESENT)))) << "Disk is not ready";
+                Property(&ScsiException::GetAsc, INITIALIZING_COMMAND_REQUIRED)))) << "Disk is not ready";
 }
 
 TEST(DiskTest, SynchronizeCache10)

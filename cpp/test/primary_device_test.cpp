@@ -267,7 +267,7 @@ TEST(PrimaryDeviceTest, TestUnitReady)
 
     device->SetAttn(false);
     EXPECT_CALL(*controller, DataIn).Times(0);
-    Dispatch(device, TEST_UNIT_READY, NOT_READY, MEDIUM_NOT_PRESENT);
+    Dispatch(device, TEST_UNIT_READY, NOT_READY, INITIALIZING_COMMAND_REQUIRED);
 
     device->SetReady(true);
     EXPECT_CALL(*controller, Status);
@@ -415,6 +415,10 @@ TEST(PrimaryDeviceTest, RequestSense)
 TEST(PrimaryDeviceTest, SendDiagnostic)
 {
     auto [controller, device] = CreatePrimaryDevice();
+
+    device->SetReady(false);
+    Dispatch(device, REQUEST_SENSE, NOT_READY, MEDIUM_NOT_PRESENT);
+    device->SetReady(true);
 
     EXPECT_CALL(*controller, Status);
     Dispatch(device, SEND_DIAGNOSTIC);

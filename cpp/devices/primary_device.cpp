@@ -307,8 +307,10 @@ void PrimaryDevice::RequestSense()
     DataInPhase(length);
 }
 
-void PrimaryDevice::SendDiagnostic() const
+void PrimaryDevice::SendDiagnostic()
 {
+    CheckReady();
+
     // Do not support parameter list
     if (GetCdbByte(3) || GetCdbByte(4)) {
         throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
@@ -333,7 +335,7 @@ void PrimaryDevice::CheckReady()
 
     // Return status if not ready
     if (!IsReady()) {
-        throw ScsiException(NOT_READY, MEDIUM_NOT_PRESENT);
+        throw ScsiException(NOT_READY, IsRemovable() ? MEDIUM_NOT_PRESENT : INITIALIZING_COMMAND_REQUIRED);
     }
 }
 

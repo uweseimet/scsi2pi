@@ -196,6 +196,8 @@ private:
     const int lun;
 
     bool ready = false;
+
+    // There is only support for a single initiator
     bool reset = false;
     bool attn = false;
 

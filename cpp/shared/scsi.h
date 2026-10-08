@@ -208,6 +208,7 @@ enum class SenseKey : uint8_t
 enum class Asc : uint8_t
 {
     NO_ADDITIONAL_SENSE_INFORMATION = 0x00,
+    INITIALIZING_COMMAND_REQUIRED = 0x02,
     WRITE_FAULT = 0x03,
     WRITE_ERROR = 0x0c,
     READ_ERROR = 0x11,

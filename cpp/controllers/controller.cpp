@@ -124,7 +124,6 @@ void Controller::Command()
                 RaiseDeferredError(ILLEGAL_REQUEST, INVALID_COMMAND_OPERATION_CODE);
             }
             else {
-                bus.SetRST(true);
                 bus.Reset();
                 RaiseDeferredError(ABORTED_COMMAND, COMMAND_PHASE_ERROR);
             }
@@ -151,7 +150,6 @@ void Controller::Command()
         if (actual_count != command_bytes_count) {
             LogWarn("Received {} byte(s) in COMMAND phase for command ${:02x}, {} required", actual_count, GetCdb()[0],
                 command_bytes_count);
-            bus.SetRST(true);
             bus.Reset();
             RaiseDeferredError(ABORTED_COMMAND, COMMAND_PHASE_ERROR);
             return;

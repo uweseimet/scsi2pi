@@ -194,8 +194,8 @@ bool Disk::InitCache(const string &path)
 
 void Disk::FlushCache()
 {
-    if (cache) {
-        cache->Flush();
+    if (cache && !cache->Flush()) {
+        throw ScsiException(MEDIUM_ERROR, WRITE_ERROR);
     }
 }
 
@@ -260,7 +260,7 @@ void Disk::Verify()
 
 void Disk::WriteVerify(uint64_t start, uint32_t count)
 {
-    // A transfer length of 0 is legal
+    // In case of a verify operation, just read the data sent by the initiator and do not report an error
     if (count) {
         next_sector = start;
 
