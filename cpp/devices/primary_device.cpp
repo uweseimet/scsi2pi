@@ -305,8 +305,10 @@ void PrimaryDevice::RequestSense()
     DataInPhase(length);
 }
 
-void PrimaryDevice::SendDiagnostic() const
+void PrimaryDevice::SendDiagnostic()
 {
+    CheckReady();
+
     // Do not support parameter list
     if (GetCdbByte(3) || GetCdbByte(4)) {
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
@@ -331,7 +333,8 @@ void PrimaryDevice::CheckReady()
 
     // Return status if not ready
     if (!IsReady()) {
-        throw ScsiException(SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
+        throw ScsiException(SenseKey::NOT_READY,
+            IsRemovable() ? Asc::MEDIUM_NOT_PRESENT : Asc::INITIALIZING_COMMAND_REQUIRED);
     }
 }
 

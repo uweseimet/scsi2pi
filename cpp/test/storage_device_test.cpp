@@ -79,7 +79,7 @@ TEST(StorageDeviceTest, PreventAllowMediumRemoval)
 {
     auto [controller, device] = CreateStorageDevice();
 
-    Dispatch(device, ScsiCommand::PREVENT_ALLOW_MEDIUM_REMOVAL, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(device, ScsiCommand::PREVENT_ALLOW_MEDIUM_REMOVAL, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
         "PREVENT/ALLOW MEDIUM REMOVAL must fail because device is not ready");
 
     device->SetReady(true);

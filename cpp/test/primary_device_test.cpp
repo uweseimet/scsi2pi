@@ -267,7 +267,7 @@ TEST(PrimaryDeviceTest, TestUnitReady)
 
     device->SetAttn(false);
     EXPECT_CALL(*controller, DataIn).Times(0);
-    Dispatch(device, ScsiCommand::TEST_UNIT_READY, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
+    Dispatch(device, ScsiCommand::TEST_UNIT_READY, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED);
 
     device->SetReady(true);
     EXPECT_CALL(*controller, Status);
@@ -415,6 +415,10 @@ TEST(PrimaryDeviceTest, RequestSense)
 TEST(PrimaryDeviceTest, SendDiagnostic)
 {
     auto [controller, device] = CreatePrimaryDevice();
+
+    device->SetReady(false);
+    Dispatch(device, ScsiCommand::REQUEST_SENSE, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
+    device->SetReady(true);
 
     EXPECT_CALL(*controller, Status);
     Dispatch(device, ScsiCommand::SEND_DIAGNOSTIC);

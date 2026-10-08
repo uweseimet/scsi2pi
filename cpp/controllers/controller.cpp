@@ -122,7 +122,6 @@ void Controller::Command()
                 RaiseDeferredError(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_COMMAND_OPERATION_CODE);
             }
             else {
-                bus.SetRST(true);
                 bus.Reset();
                 RaiseDeferredError(SenseKey::ABORTED_COMMAND, Asc::COMMAND_PHASE_ERROR);
             }
@@ -148,7 +147,6 @@ void Controller::Command()
         if (actual_count != command_bytes_count) {
             LogWarn(fmt::format("Received {} byte(s) in COMMAND phase for command ${:02x}, {} required",
                 actual_count, GetCdb()[0], command_bytes_count));
-            bus.SetRST(true);
             bus.Reset();
             RaiseDeferredError(SenseKey::ABORTED_COMMAND, Asc::COMMAND_PHASE_ERROR);
             return;
