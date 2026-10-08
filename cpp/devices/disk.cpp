@@ -93,11 +93,13 @@ string Disk::SetUp()
         });
     AddCommand(ScsiCommand::SYNCHRONIZE_CACHE_10, [this]
         {
+            CheckAndGetStartAndCount();
             FlushCache();
             StatusPhase();
         });
     AddCommand(ScsiCommand::SYNCHRONIZE_CACHE_SPACE_16, [this]
         {
+            CheckAndGetStartAndCount();
             FlushCache();
             StatusPhase();
         });
@@ -328,8 +330,10 @@ void Disk::ReadWriteLong()
     }
 }
 
-void Disk::ReadDefectData10() const
+void Disk::ReadDefectData10()
 {
+    CheckReady();
+
     const int allocation_length = min(GetCdbInt16(7), 4);
 
     GetController()->SetCurrentLength(allocation_length);
@@ -389,7 +393,10 @@ void Disk::AddCachingPage(map<int, vector<byte>> &pages, bool changeable) const
     vector<byte> buf(12);
 
     if (!changeable) {
-        // Only read cache is valid
+        // WCE depends on the cache type
+        if (caching_mode == PbCachingMode::PISCSI) {
+            buf[2] = byte { 0x04 };
+        }
 
         // Disable pre-fetch transfer length
         SetInt16(buf, 0x04, -1);
