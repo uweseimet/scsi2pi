@@ -51,6 +51,7 @@ private:
     bool TransferFromHost(int);
 
     void ParseMessage();
+    void RejectMessage();
     void RejectExtendedMessage();
     void ProcessMessage();
     void ProcessEndOfMessage();

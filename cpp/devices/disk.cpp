@@ -249,7 +249,13 @@ void Disk::Verify()
     // Flush the cache according to the specification
     FlushCache();
 
-    WriteVerify(start, count);
+    // BytChk?
+    if (GetCdbByte(1) & 0x02) {
+        WriteVerify(start, count);
+    }
+    else {
+        StatusPhase();
+    }
 }
 
 void Disk::WriteVerify(uint64_t start, uint32_t count)

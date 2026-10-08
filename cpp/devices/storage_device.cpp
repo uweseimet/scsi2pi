@@ -161,7 +161,7 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length)
 
     // Parse the pages
     while (length > 0) {
-        const int page_code = buf[offset];
+        const auto page_code = static_cast<int>(byte { buf[offset] } & byte { 0x3f });
 
         const auto &it = pages.find(page_code);
         if (it == pages.end()) {
@@ -222,7 +222,7 @@ pair<int, int> StorageDevice::EvaluateBlockDescriptors(ScsiCommand cmd, data_out
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::PARAMETER_LIST_LENGTH_ERROR);
     }
 
-    const size_t descriptor_length = cmd == ScsiCommand::MODE_SELECT_10 ? GetInt16(buf, 6) : buf[3];
+    const size_t descriptor_length = cmd == ScsiCommand::MODE_SELECT_10 ? GetInt24(buf, 5) : buf[3];
     if (buf.size() < descriptor_length + required_length) {
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::PARAMETER_LIST_LENGTH_ERROR);
     }

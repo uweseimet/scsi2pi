@@ -572,7 +572,7 @@ void Controller::ParseMessage()
 
         case static_cast<uint8_t>(MessageCode::BUS_DEVICE_RESET): {
             LogTrace("Received BUS DEVICE RESET message");
-            if (const auto device = GetDeviceForLun(GetEffectiveLun()); device) {
+            for (const auto &device : GetDevices()) {
                 device->SetReset(true);
                 device->DiscardReservation();
             }
@@ -585,9 +585,21 @@ void Controller::ParseMessage()
                 identified_lun = static_cast<int>(msg_byte) & 0x1f;
                 LogTrace(fmt::format("Received IDENTIFY message for LUN {}", identified_lun));
             }
+            else {
+                RejectMessage();
+            }
             break;
         }
     }
+}
+
+void Controller::RejectMessage()
+{
+    SetCurrentLength(1);
+    SetTransferSize(1, 1);
+    // MESSSAGE REJECT
+    GetBuffer()[0] = 0x07;
+    MsgIn();
 }
 
 void Controller::RejectExtendedMessage()
@@ -623,11 +635,7 @@ void Controller::RejectExtendedMessage()
         }
     }
 
-    SetCurrentLength(1);
-    SetTransferSize(1, 1);
-    // MESSSAGE REJECT
-    GetBuffer()[0] = 0x07;
-    MsgIn();
+    RejectMessage();
 }
 
 void Controller::ProcessMessage()
@@ -678,7 +686,7 @@ void Controller::RaiseDeferredError(SenseKey s, Asc a)
 
 void Controller::ProvideSenseData()
 {
-    SetCurrentLength(18);
+    SetCurrentLength(min(18, static_cast<int>(GetCdb()[4])));
 
     auto &buf = GetBuffer();
     fill_n(buf.begin(), 18, 0);
