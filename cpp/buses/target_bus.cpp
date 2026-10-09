@@ -13,8 +13,6 @@ int Bus::TargetCommandHandShake(data_in_t buf)
 {
     assert(!buf.empty());
 
-    DisableIRQ();
-
     SetREQ(true);
 
     bool ack = WaitHandShake(PIN_ACK_MASK, true);
@@ -24,7 +22,7 @@ int Bus::TargetCommandHandShake(data_in_t buf)
     SetREQ(false);
 
     if (!ack || !WaitHandShake(PIN_ACK_MASK, false)) {
-        return FinishTransfer(-1);
+        return -1;
     }
 
     // The ICD AdSCSI ST, AdSCSI Plus ST and AdSCSI Micro ST host adapters allow SCSI devices to be connected
@@ -45,14 +43,14 @@ int Bus::TargetCommandHandShake(data_in_t buf)
         SetREQ(false);
 
         if (!ack || !WaitHandShake(PIN_ACK_MASK, false)) {
-            return FinishTransfer(-1);
+            return -1;
         }
     }
 
     const int command_byte_count = CommandMetaData::GetInstance().GetByteCount(static_cast<ScsiCommand>(buf[0]));
     if (!command_byte_count || command_byte_count > static_cast<int>(buf.size())) {
         // Unknown command or too many command bytes
-        return FinishTransfer(0);
+        return 0;
     }
 
     int bytes_received;
@@ -66,19 +64,17 @@ int Bus::TargetCommandHandShake(data_in_t buf)
         SetREQ(false);
 
         if (!ack || !WaitHandShake(PIN_ACK_MASK, false)) {
-            return FinishTransfer(-1);
+            return -1;
         }
     }
 
-    return FinishTransfer(bytes_received);
+    return bytes_received;
 }
 
 // For DATA OUT and MESSAGE OUT
 int Bus::TargetReceiveHandShake(data_in_t buf)
 {
     const auto count = static_cast<int>(buf.size());
-
-    DisableIRQ();
 
     int bytes_received;
     for (bytes_received = 0; bytes_received < count; ++bytes_received) {
@@ -91,19 +87,17 @@ int Bus::TargetReceiveHandShake(data_in_t buf)
         SetREQ(false);
 
         if (!ack || !WaitHandShake(PIN_ACK_MASK, false)) {
-            return FinishTransfer(bytes_received);
+            return bytes_received;
         }
     }
 
-    return FinishTransfer(bytes_received);
+    return bytes_received;
 }
 
 // For DATA IN, MESSAGE IN and STATUS
 int Bus::TargetSendHandShake(data_out_t buf, [[maybe_unused]] int daynaport_delay_after_bytes)
 {
     const auto count = static_cast<int>(buf.size());
-
-    DisableIRQ();
 
     int bytes_sent;
     for (bytes_sent = 0; bytes_sent < count; ++bytes_sent) {
@@ -118,7 +112,7 @@ int Bus::TargetSendHandShake(data_out_t buf, [[maybe_unused]] int daynaport_dela
         WaitNanoSeconds(false);
 
         if (!WaitHandShake(PIN_ACK_MASK, false)) {
-            return FinishTransfer(bytes_sent);
+            return bytes_sent;
         }
 
         SetREQ(true);
@@ -128,11 +122,11 @@ int Bus::TargetSendHandShake(data_out_t buf, [[maybe_unused]] int daynaport_dela
         SetREQ(false);
 
         if (!ack) {
-            return FinishTransfer(bytes_sent);
+            return bytes_sent;
         }
     }
 
     WaitHandShake(PIN_ACK_MASK, false);
 
-    return FinishTransfer(bytes_sent);
+    return bytes_sent;
 }

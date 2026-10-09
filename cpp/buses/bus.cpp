@@ -71,12 +71,6 @@ bool Bus::WaitHandShake(int pin_mask, bool state) const
     return false;
 }
 
-int Bus::FinishTransfer(int count)
-{
-    EnableIRQ();
-    return count;
-}
-
 void Bus::SetBSY(bool state) const
 {
     SetSignal(PIN_BSY, state);

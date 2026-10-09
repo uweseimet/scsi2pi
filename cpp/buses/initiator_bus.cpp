@@ -8,13 +8,13 @@
 
 #include "bus.h"
 
-int Bus::InitiatorMsgInHandShake() const
+uint8_t Bus::InitiatorMsgInHandShake()
 {
     if (!WaitHandShake(PIN_REQ_MASK, true) || !IsPhase(BusPhase::MSG_IN)) {
         return -1;
     }
 
-    const int msg = GetDAT();
+    const uint8_t msg = GetDAT();
 
     SetACK(true);
 
@@ -38,14 +38,12 @@ int Bus::InitiatorReceiveHandShake(data_in_t buf)
 {
     const auto count = static_cast<int>(buf.size());
 
-    DisableIRQ();
-
     const BusPhase phase = GetPhase();
 
     int bytes_received;
     for (bytes_received = 0; bytes_received < count; ++bytes_received) {
         if (!WaitHandShake(PIN_REQ_MASK, true) || !IsPhase(phase)) {
-            return FinishTransfer(bytes_received);
+            return bytes_received;
         }
 
         buf[bytes_received] = GetDAT();
@@ -57,19 +55,17 @@ int Bus::InitiatorReceiveHandShake(data_in_t buf)
         SetACK(false);
 
         if (!req || !IsPhase(phase)) {
-            return FinishTransfer(bytes_received);
+            return bytes_received;
         }
     }
 
-    return FinishTransfer(bytes_received);
+    return bytes_received;
 }
 
 // For MESSAGE OUT, DATA OUT and COMMAND
 int Bus::InitiatorSendHandShake(data_out_t buf)
 {
     const auto count = static_cast<int>(buf.size());
-
-    DisableIRQ();
 
     const BusPhase phase = GetPhase();
 
@@ -82,7 +78,7 @@ int Bus::InitiatorSendHandShake(data_out_t buf)
         WaitNanoSeconds(false);
 
         if (!WaitHandShake(PIN_REQ_MASK, true) || !IsPhase(phase)) {
-            return FinishTransfer(bytes_sent);
+            return bytes_sent;
         }
 
         // Signal the last MESSAGE OUT byte when in MESSAGE OUT phase
@@ -97,9 +93,9 @@ int Bus::InitiatorSendHandShake(data_out_t buf)
         SetACK(false);
 
         if (!req || !IsPhase(phase)) {
-            return FinishTransfer(bytes_sent);
+            return bytes_sent;
         }
     }
 
-    return FinishTransfer(bytes_sent);
+    return bytes_sent;
 }

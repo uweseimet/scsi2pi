@@ -51,10 +51,10 @@ public:
 
     virtual bool WaitHandShake(int, bool) const;
 
-    int TargetCommandHandShake(data_in_t);
+    virtual int TargetCommandHandShake(data_in_t);
     virtual int TargetReceiveHandShake(data_in_t);
     virtual int TargetSendHandShake(data_out_t, int = SEND_NO_DELAY);
-    int InitiatorMsgInHandShake() const;
+    virtual uint8_t InitiatorMsgInHandShake();
     virtual int InitiatorReceiveHandShake(data_in_t);
     virtual int InitiatorSendHandShake(data_out_t);
 
@@ -183,20 +183,9 @@ protected:
 
     virtual void WaitNanoSeconds(bool) const = 0;
 
-    virtual void DisableIRQ()
-    {
-        // Nothing to do by default
-    }
-    virtual void EnableIRQ()
-    {
-        // Nothing to do by default
-    }
-
     uint8_t GetSelection() const;
 
 private:
-
-    int FinishTransfer(int);
 
     // The current bus signals, static because there is exactly one set of bus signals
     inline static uint32_t signals = 0xffffffff;

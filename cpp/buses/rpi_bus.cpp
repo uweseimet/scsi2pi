@@ -416,6 +416,72 @@ void RpiBus::SetSignalDriveStrength(uint32_t drive) const
     pads[PAD_0_27] = (0xfffffff8 & data) | drive | 0x5a000000;
 }
 
+int RpiBus::TargetCommandHandShake(data_in_t buf)
+{
+    DisableIRQ();
+
+    const auto count = GpioBus::TargetCommandHandShake(buf);
+
+    EnableIRQ();
+
+    return count;
+}
+
+int RpiBus::TargetReceiveHandShake(data_in_t buf)
+{
+    DisableIRQ();
+
+    const auto count = GpioBus::TargetReceiveHandShake(buf);
+
+    EnableIRQ();
+
+    return count;
+}
+
+int RpiBus::TargetSendHandShake(data_out_t buf, int daynaport_delay)
+{
+    DisableIRQ();
+
+    const auto count = GpioBus::TargetSendHandShake(buf, daynaport_delay);
+
+    EnableIRQ();
+
+    return count;
+}
+
+uint8_t RpiBus::InitiatorMsgInHandShake()
+{
+    DisableIRQ();
+
+    const uint8_t msg = GpioBus::InitiatorMsgInHandShake();
+
+    EnableIRQ();
+
+    return msg;
+}
+
+int RpiBus::InitiatorReceiveHandShake(data_in_t buf)
+{
+    DisableIRQ();
+
+    const auto count = GpioBus::InitiatorReceiveHandShake(buf);
+
+    EnableIRQ();
+
+    return count;
+}
+
+int RpiBus::InitiatorSendHandShake(data_out_t buf)
+{
+    DisableIRQ();
+
+    const auto count = GpioBus::InitiatorSendHandShake(buf);
+
+    EnableIRQ();
+
+    return count;
+}
+
 // nanosleep() does not provide the required resolution, which causes issues when reading data from the bus.
 // Furthermore, nanosleep() requires interrupts to be enabled.
 void RpiBus::WaitNanoSeconds(bool daynaport) const
