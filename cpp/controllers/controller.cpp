@@ -555,85 +555,109 @@ void Controller::XferMsg()
 
 void Controller::ParseMessage()
 {
-    for (const uint8_t msg_byte : msg_bytes) {
-        switch (msg_byte) {
-        case 0x01: {
-            RejectExtendedMessage();
-            break;
-        }
+    int rejects = 0;
 
-        case static_cast<uint8_t>(MessageCode::ABORT): {
-            LogTrace("Received ABORT message");
-            BusFree();
-            return;
-        }
+    for (size_t i = 0; i < msg_bytes.size(); ++i) {
+        const uint8_t msg_byte = msg_bytes[i];
 
-        case static_cast<uint8_t>(MessageCode::BUS_DEVICE_RESET): {
-            LogTrace("Received BUS DEVICE RESET message");
-            for (const auto &device : GetDevices()) {
-                device->SetReset(true);
-                device->DiscardReservation();
-            }
-            BusFree();
-            return;
+        if (msg_byte >= 0x80) {
+            identified_lun = static_cast<int>(msg_byte) & 0x1f;
+            LogTrace(fmt::format("Received IDENTIFY message for LUN {}", identified_lun));
         }
+        else if (msg_byte == 0x01) {
+            LogExtendedMessage(i);
+            ++rejects;
 
-        default:
-            if (msg_byte >= 0x80) {
-                identified_lun = static_cast<int>(msg_byte) & 0x1f;
-                LogTrace(fmt::format("Received IDENTIFY message for LUN {}", identified_lun));
+            // Skip the length byte and the 'length' bytes that follow (a length of 0 means 256)
+            if (i + 1 < msg_bytes.size()) {
+                i += 1 + (msg_bytes[i + 1] ? msg_bytes[i + 1] : 256);
             }
-            else {
-                RejectMessage();
-            }
-            break;
         }
+        else if (msg_byte >= 0x20 && msg_byte <= 0x2f) {
+            // Two-byte messages are not supported
+            LogTrace(fmt::format("Rejecting two-byte message ${:02x}", msg_byte));
+            ++rejects;
+            ++i;
+        }
+        else {
+            switch (msg_byte) {
+            case static_cast<int>(MessageCode::ABORT):
+                LogTrace("Received ABORT message");
+                BusFree();
+                return;
+
+            case static_cast<int>(MessageCode::BUS_DEVICE_RESET):
+                LogTrace("Received BUS DEVICE RESET message");
+                BusDeviceReset();
+                return;
+
+            case 0x05:
+                // INITIATOR DETECTED ERROR
+            case 0x07:
+                // MESSAGE REJECT, never answer with MESSAGE REJECT
+            case 0x08:
+                // NO OPERATION
+            case 0x09:
+                // MESSAGE PARITY ERROR
+                break;
+
+            default:
+                LogTrace(fmt::format("Rejecting unsupported message ${:02x}", msg_byte));
+                ++rejects;
+                break;
+            }
+        }
+    }
+
+    // One MESSAGE REJECT byte per rejected message, all in a single MESSAGE IN phase
+    if (rejects) {
+        SetCurrentLength(rejects);
+        SetTransferSize(rejects, rejects);
+        fill_n(GetBuffer().begin(), rejects, 0x07);
+        MsgIn();
     }
 }
 
-void Controller::RejectMessage()
+void Controller::LogExtendedMessage(size_t start) const
 {
-    SetCurrentLength(1);
-    SetTransferSize(1, 1);
-    // MESSSAGE REJECT
-    GetBuffer()[0] = 0x07;
-    MsgIn();
-}
-
-void Controller::RejectExtendedMessage()
-{
-    if (msg_bytes.size() < 3 || !msg_bytes[1] || msg_bytes.size() < static_cast<size_t>(msg_bytes[1] + 2)) {
+    // msg_bytes[start] is the extended message marker 01h, followed by the length byte and the
+    // extended message code. The length counts the code and the arguments, a length of 0 means 256.
+    if (start + 1 >= msg_bytes.size()) {
         LogWarn("Truncated extended message");
-    }
-    else {
-        switch (msg_bytes[2]) {
-        case 0x00:
-            LogTrace("Rejecting MODIFY DATA POINTER message");
-            break;
-
-        case 0x01:
-            LogTrace("Rejecting SYNCHRONOUS DATA TRANSFER REQUEST message");
-            break;
-
-        case 0x03:
-            LogTrace("Rejecting WIDE DATA TRANSFER REQUEST message");
-            break;
-
-        case 0x04:
-            LogTrace("Rejecting PARALLEL PROTOCOL REQUEST message");
-            break;
-
-        case 0x05:
-            LogTrace("Rejecting MODIFY BIDIRECTIONAL DATA POINTER message");
-            break;
-
-        default:
-            LogTrace(fmt::format("Rejecting extended message ${:02x}", msg_bytes[2]));
-            break;
-        }
+        return;
     }
 
-    RejectMessage();
+    if (const size_t length = msg_bytes[start + 1] ? msg_bytes[start + 1] : 256; start + 2 + length
+        > msg_bytes.size()) {
+        LogWarn("Truncated extended message");
+        return;
+    }
+
+    switch (msg_bytes[start + 2]) {
+    case 0x00:
+        LogTrace("Rejecting MODIFY DATA POINTER message");
+        break;
+
+    case 0x01:
+        LogTrace("Rejecting SYNCHRONOUS DATA TRANSFER REQUEST message");
+        break;
+
+    case 0x03:
+        LogTrace("Rejecting WIDE DATA TRANSFER REQUEST message");
+        break;
+
+    case 0x04:
+        LogTrace("Rejecting PARALLEL PROTOCOL REQUEST message");
+        break;
+
+    case 0x05:
+        LogTrace("Rejecting MODIFY BIDIRECTIONAL DATA POINTER message");
+        break;
+
+    default:
+        LogTrace(fmt::format("Rejecting extended message ${:02x}", msg_bytes[start + 2]));
+        break;
+    }
 }
 
 void Controller::ProcessMessage()
@@ -673,6 +697,21 @@ void Controller::ProcessEndOfMessage()
     } else {
         BusFree();
     }
+}
+
+void Controller::BusDeviceReset()
+{
+    deferred_sense_key = SenseKey::NO_SENSE;
+    deferred_asc = Asc::NO_ADDITIONAL_SENSE_INFORMATION;
+
+    // BUS DEVICE RESET applies to all LUNs
+    for (const auto &device : GetDevices()) {
+        device->SetReset(true);
+        device->DiscardReservation();
+        device->ResetStatus();
+    }
+
+    BusFree();
 }
 
 void Controller::RaiseDeferredError(SenseKey s, Asc a)

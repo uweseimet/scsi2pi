@@ -52,9 +52,11 @@ private:
 
     void ParseMessage();
     void RejectMessage();
-    void RejectExtendedMessage();
+    void LogExtendedMessage(size_t) const;
     void ProcessMessage();
     void ProcessEndOfMessage();
+
+    void BusDeviceReset();
 
     void RaiseDeferredError(SenseKey, Asc);
     void ProvideSenseData();
