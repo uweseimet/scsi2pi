@@ -408,8 +408,8 @@ SRC_S2P_TEST := test/abstract_controller_test.cpp \
 	test/user_util_test.cpp \
 	test/virtual_bus_test.cpp \
 	test/integration_test.cpp \
-	test/test_setup.cpp \
-	test/test_shared.cpp
+	test/test_shared.cpp \
+	test/s2p_test.cpp
 ifdef IS_LINUX
 SRC_S2P_TEST += test/daynaport_test.cpp \
 	test/gpio_bus_test.cpp \

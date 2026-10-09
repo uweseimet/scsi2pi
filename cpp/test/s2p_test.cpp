@@ -10,6 +10,7 @@
 #include <getopt.h>
 #include <gtest/gtest.h>
 #include "buses/bus_factory.h"
+#include "shared/s2p_util.h"
 #include "test_shared.h"
 
 static bool ParseBoolFlag(string_view arg, string_view opt, string_view flag_prefix, bool def)
@@ -25,6 +26,14 @@ static bool ParseBoolFlag(string_view arg, string_view opt, string_view flag_pre
     return def;
 }
 
+static void Usage()
+{
+    cout << "Usage: s2p_test [options]\n"
+        << "  --enable-logging/-l     Enable logging on trace level.\n"
+        << "  --integration-tests/-i  Run integration tests instead of unit tests.\n"
+        << "  --help/-h               Display this help.\n";
+}
+
 int main(int argc, char *argv[])
 {
     bool enable_logging = false;
@@ -37,8 +46,14 @@ int main(int argc, char *argv[])
         } else if (arg.rfind("-l", 0) == 0 || arg.rfind("--enable-logging", 0) == 0) {
             enable_logging = ParseBoolFlag(arg, "-l", "--enable-logging", enable_logging);
         }
+        else if (arg.rfind("-h", 0) == 0 || arg.rfind("--help", 0) == 0) {
+            cout << s2p_util::Banner("(Test Suite Driver)") << flush;
+            Usage();
+            return EXIT_SUCCESS;
+        }
         else {
             cerr << "Invalid option: '" << arg << "'\n";
+            Usage();
             return EXIT_FAILURE;
         }
     }
