@@ -196,22 +196,23 @@ void Controller::Execute()
         assert(device);
     }
 
+    // A reservation conflict is a pure status
+    if (!device->CheckReservation(GetInitiatorId())) {
+        Error(NO_SENSE, NO_ADDITIONAL_SENSE_INFORMATION, RESERVATION_CONFLICT);
+        return;
+    }
+
     // Discard pending sense data from the previous command if the current command is not REQUEST SENSE
     if (opcode != ScsiCommand::REQUEST_SENSE) {
         SetStatus(GOOD);
         device->ResetStatus();
     }
 
-    if (device->CheckReservation(GetInitiatorId())) {
-        try {
-            device->Dispatch(opcode);
-        }
-        catch (const ScsiException &e) {
-            Error(e.GetSenseKey(), e.GetAsc());
-        }
+    try {
+        device->Dispatch(opcode);
     }
-    else {
-        Error(ILLEGAL_REQUEST, NO_ADDITIONAL_SENSE_INFORMATION, RESERVATION_CONFLICT);
+    catch (const ScsiException &e) {
+        Error(e.GetSenseKey(), e.GetAsc());
     }
 }
 

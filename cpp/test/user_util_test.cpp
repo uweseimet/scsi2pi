@@ -5,6 +5,7 @@
 // Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
+#if __has_include(<pwd.h>)
 
 #include <gtest/gtest.h>
 #include <cstdlib>
@@ -42,3 +43,5 @@ TEST(UserUtilTest, GetUidAndGid)
 
     unsetenv("SUDO_UID");
 }
+
+#endif

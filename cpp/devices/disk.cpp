@@ -307,7 +307,7 @@ void Disk::ReadWriteLong()
         FlushCache();
         caching_mode = PbCachingMode::LINUX;
         if (!InitCache(GetFilename())) {
-            throw IoException("Can't initialize cache");
+            throw ScsiException(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
         }
         linux_cache = static_pointer_cast<LinuxCache>(cache);
         LogDebug("Switched caching mode to '{}'", PbCachingMode_Name(caching_mode));

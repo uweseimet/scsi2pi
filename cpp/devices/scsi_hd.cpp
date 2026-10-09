@@ -132,6 +132,7 @@ void ScsiHd::AddDrivePage(map<int, vector<byte>> &pages, bool changeable) const
         uint64_t cylinders = GetBlockCount();
         cylinders >>= 3;
         cylinders /= 25;
+        // The page length will be set later
         SetInt32(buf, 0x01, static_cast<uint32_t>(cylinders));
 
         // 8 heads

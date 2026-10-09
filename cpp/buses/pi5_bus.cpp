@@ -84,7 +84,7 @@ string Pi5Bus::SetUp(bool target)
         }
     }
     else {
-        info("Hardware handshake is disabled");
+        debug("Hardware handshake is disabled");
     }
 
     // Set the initiator signal direction
