@@ -88,6 +88,8 @@ void Controller::BusFree()
 void Controller::Selection()
 {
     if (!IsSelection()) {
+        identified_lun = -1;
+
         SetPhase(BusPhase::SELECTION, "SELECTION phase");
 
         bus.SetBSY(true);
@@ -193,22 +195,23 @@ void Controller::Execute()
         assert(device);
     }
 
+    // A reservation conflict is a pure status
+    if (!device->CheckReservation(GetInitiatorId())) {
+        Error(SenseKey::NO_SENSE, Asc::NO_ADDITIONAL_SENSE_INFORMATION, StatusCode::RESERVATION_CONFLICT);
+        return;
+    }
+
     // Discard pending sense data from the previous command if the current command is not REQUEST SENSE
     if (opcode != ScsiCommand::REQUEST_SENSE) {
         SetStatus(StatusCode::GOOD);
         device->ResetStatus();
     }
 
-    if (device->CheckReservation(GetInitiatorId())) {
-        try {
-            device->Dispatch(opcode);
-        }
-        catch (const ScsiException &e) {
-            Error(e.GetSenseKey(), e.GetAsc());
-        }
+    try {
+        device->Dispatch(opcode);
     }
-    else {
-        Error(SenseKey::ILLEGAL_REQUEST, Asc::NO_ADDITIONAL_SENSE_INFORMATION, StatusCode::RESERVATION_CONFLICT);
+    catch (const ScsiException &e) {
+        Error(e.GetSenseKey(), e.GetAsc());
     }
 }
 
