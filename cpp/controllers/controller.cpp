@@ -90,6 +90,8 @@ void Controller::BusFree()
 void Controller::Selection()
 {
     if (!IsSelection()) {
+        identified_lun = -1;
+
         SetPhase(BusPhase::SELECTION, "SELECTION phase");
 
         bus.SetBSY(true);

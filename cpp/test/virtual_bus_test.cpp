@@ -103,7 +103,7 @@ TEST(VirtualBusTest, IO)
 TEST(VirtualBusTest, DAT)
 {
     const auto &bus = BusFactory::GetInstance().CreateBus( { .standard_board = false, .target_mode = true,
-        .enable_irqs = false, .use_pio = false }, "");
+        .enable_irqs = false, .software_handshake = true }, "");
 
     bus->SetDAT(0xae);
     EXPECT_EQ(0xae, bus->GetDAT());
@@ -114,7 +114,7 @@ TEST(VirtualBusTest, DAT)
 TEST(VirtualBusTest, Acquire)
 {
     const auto &bus = BusFactory::GetInstance().CreateBus( { .standard_board = false, .target_mode = true,
-        .enable_irqs = false, .use_pio = false }, "");
+        .enable_irqs = false, .software_handshake = true }, "");
 
     bus->SetDAT(0x12);
     bus->Acquire();
@@ -124,7 +124,7 @@ TEST(VirtualBusTest, Acquire)
 TEST(VirtualBusTest, BusPhases)
 {
     const auto &bus = BusFactory::GetInstance().CreateBus( { .standard_board = false, .target_mode = true,
-        .enable_irqs = false, .use_pio = false }, "");
+        .enable_irqs = false, .software_handshake = true }, "");
 
     EXPECT_EQ(BusPhase::BUS_FREE, bus->GetPhase());
     EXPECT_TRUE(bus->IsPhase(BusPhase::BUS_FREE));

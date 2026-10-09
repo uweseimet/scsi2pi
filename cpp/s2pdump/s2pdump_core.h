@@ -102,6 +102,8 @@ private:
 
     bool run_bus_scan = false;
 
+    bool software_handshake = false;
+
     bool scan_all_luns = false;
 
     bool restore = false;

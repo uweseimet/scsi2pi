@@ -27,7 +27,7 @@ public:
         bool standard_board = false;
         bool target_mode = false;
         bool enable_irqs = false;
-        bool use_pio = false;
+        bool software_handshake = true;
     };
 
     virtual ~Bus() = default;

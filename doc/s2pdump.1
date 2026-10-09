@@ -14,10 +14,11 @@ s2pdump \- SCSI/SASI hard/tape drive dump/restore tool
 [\fB\--overwrite/-o\fR]
 [\fB\--restore/-r\fR]
 [\fB\--retries/-R\fR \fIRETRIES\fR]
-[\fB\--scan/-s\fR]
+[\fB\--scan\fR]
 [\fB\--scsi-generic/-g\fR \fIDEVICE_FILE\fR]
-[\fB\--sector-count/-C\fR \fICOUNT\fR]
-[\fB\--start-sector/-S\fR \fISTART\fR]
+[\fB\--sector-count/-c\fR \fICOUNT\fR]
+[\fB\--software-handshake/-S\fR]
+[\fB\--start-sector/-s\fR \fISTART\fR]
 [\fB\--version/-v\fR]
 .SH DESCRIPTION
 .B s2pdump
@@ -40,7 +41,7 @@ To use the generated drive image with SCSI2Pi, it should usually be moved to the
 .SH OPTIONS
 .TP
 .BR --all-luns/-a\fI
-Check all LUNs during bus scan. The default is to scan LUN 0 only.
+Check all LUNs during a bus scan. The default is to scan LUN 0 only.
 If the target device supports the REPORT LUNS SCSI command, s2pdump uses this command to optimize the scan.
 .TP
 .BR --board-id/-B\fI " "\fIBOARD_ID
@@ -73,16 +74,19 @@ Run in restore mode. The default is dump mode.
 .BR --retries/-R\fI " " \fIRETRIES
 Set the number of retries when dumping/restoring a disk drive, default is 0.
 .TP
-.BR --scan/-s\fI
+.BR --scan\fI
 Scan the bus for SCSI and SASI devices and display their properties.
 .TP
 .BR --scsi-generic/-g\fI " "\fIDEVICE_FILE
 Use the Linux SG driver with the specified device file instead of a RaSCSI/PiSCSI board.
 .TP
-.BR --sector-count/-C\fI "  " \fICOUNT
+.BR --sector-count/-c\fI "  " \fICOUNT
 Only for hard drives, not for tape drives: sector count for the dump/restore operation. For SCSI drives, the default is the capacity reported by the drive. For SASI drives, s2pdump determines the capacity using the method of interval nesting. You can pass an explicit sector count to override this capacity.
 .TP
-.BR --start-sector/-S\fI "  " \fISTART
+.BR --software-handshake/-S\fI " " \fI
+On the Pi5, use a software handshake (slower) instead of a hardware handshake. Mainly for testing purposes.
+.TP
+.BR --start-sector/-s\fI "  " \fISTART
 Only for hard drives, not for tape drives: start sector for the dump/restore operation, the default is 0.
 .TP
 .BR --version/-v\fI

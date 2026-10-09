@@ -79,16 +79,18 @@ void S2pDump::Banner(bool header) const
 #endif
         << "  --scsi-id/-i ID[:LUN]              SCSI target device ID (0-7) and LUN (0-31),\n"
         << "                                     default LUN is 0.\n"
-        << "  --scan/-s                          Scan bus for SCSI and SASI devices.\n"
-        << "  --sector-count/-C COUNT            Hard drive sector count,\n"
+        << "  --scan                             Scan bus for SCSI and SASI devices.\n"
+        << "  --sector-count/-c COUNT            Hard drive sector count,\n"
         << "                                     default is the capacity.\n"
-        << "  --start-sector/-S START            Hard drive start sector, default is 0.\n"
+        << "  --software-handshake/-S            Use (slower) software handshake instead of\n"
+        << "                                     hardware handshake (Pi5 only).\n"
+        << "  --start-sector/-s START            Hard drive start sector, default is 0.\n"
         << "  --version/-v                       Display the s2pdump version.\n";
 }
 
 bool S2pDump::Init()
 {
-    bus = BusFactory::GetInstance().CreateBus( { .use_pio = true }, APP_NAME);
+    bus = BusFactory::GetInstance().CreateBus( { .software_handshake = software_handshake }, APP_NAME);
     if (!bus) {
         return false;
     }
@@ -102,6 +104,8 @@ bool S2pDump::Init()
 
 bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity for parsing
 {
+    constexpr int OPT_BUS_SCAN = 2;
+
     const vector<option> options = {
         { "all-luns", no_argument, nullptr, 'a' },
         { "board-id", required_argument, nullptr, 'B' },
@@ -114,10 +118,11 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
         { "overwrite", no_argument, nullptr, 'o' },
         { "restore", no_argument, nullptr, 'r' },
         { "retries", required_argument, nullptr, 'R' },
-        { "scan", no_argument, nullptr, 's' },
+        { "scan", no_argument, nullptr, OPT_BUS_SCAN },
         { "scsi-generic", required_argument, nullptr, 'g' },
-        { "sector-count", required_argument, nullptr, 'C' },
-        { "start-sector", required_argument, nullptr, 'S' },
+        { "sector-count", required_argument, nullptr, 'c' },
+        { "software-handshake", no_argument, nullptr, 'S' },
+        { "start-sector", required_argument, nullptr, 's' },
         { "version", no_argument, nullptr, 'v' },
         { nullptr, 0, nullptr, 0 }
     };
@@ -135,7 +140,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
 
     optind = 1;
     int opt;
-    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "ab:B:C:g:Hi:If:L:orR:sS:v",
+    while ((opt = getopt_long(static_cast<int>(args.size()), args.data(), "ab:B:c:g:Hi:If:L:orR:s:Sv",
         options.data(),
         nullptr)) != -1) {
         switch (opt) {
@@ -151,7 +156,7 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
             initiator = optarg;
             break;
 
-        case 'C':
+        case 'c':
             sector_count = optarg;
             break;
 
@@ -194,15 +199,19 @@ bool S2pDump::ParseArguments(span<char*> args) // NOSONAR Acceptable complexity 
             break;
 
         case 's':
-            run_bus_scan = true;
+            start_sector = optarg;
             break;
 
         case 'S':
-            start_sector = optarg;
+            software_handshake = true;
             break;
 
         case 'v':
             version = true;
+            break;
+
+        case OPT_BUS_SCAN:
+            run_bus_scan = true;
             break;
 
         default:

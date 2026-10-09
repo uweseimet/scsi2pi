@@ -19,7 +19,8 @@ class Pi5Bus final : public GpioBus
 
 public:
 
-    explicit Pi5Bus(Bus::BusProperties p) : GpioBus(p.standard_board), target_mode(p.target_mode), use_pio(p.use_pio)
+    explicit Pi5Bus(Bus::BusProperties p) : GpioBus(p.standard_board), target_mode(p.target_mode), software_handshake(
+        p.software_handshake)
     {
     }
 
@@ -89,7 +90,7 @@ private:
 
     const bool target_mode;
 
-    bool use_pio;
+    bool software_handshake;
 
     static constexpr size_t MAP_SIZE = 0x30000;
 

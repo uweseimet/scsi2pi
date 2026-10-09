@@ -76,15 +76,12 @@ string Pi5Bus::SetUp(bool target)
         data_oe[i] = (i | parity << 8) << PIN_DT0;
     }
 
-    if (use_pio) {
+    if (!software_handshake) {
         pio = make_unique<Rp1Pio>();
         if (const string &error = pio->Init(gpio, target); !error.empty()) {
             spdlog::error("Error: {}, using slower software handshake", error);
             pio.reset();
         }
-    }
-    else {
-        debug("Hardware handshake is disabled");
     }
 
     // Set the initiator signal direction

@@ -15,8 +15,8 @@ using namespace s2p_test;
 
 TEST(RpiBusTest, SetUp)
 {
-    RpiBus bus(RpiBus::PiType::UNKNOWN, { .standard_board = false, .target_mode = true, .enable_irqs = false, .use_pio =
-        false });
+    RpiBus bus(RpiBus::PiType::UNKNOWN, { .standard_board = false, .target_mode = true, .enable_irqs = false,
+        .software_handshake = true });
 
     EXPECT_FALSE(bus.Init(false));
 }
