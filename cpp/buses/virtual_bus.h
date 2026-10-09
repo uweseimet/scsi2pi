@@ -12,7 +12,6 @@
 #include <memory>
 #include <mutex>
 #include <unordered_map>
-#include <vector>
 #include <spdlog/spdlog.h>
 #include "bus.h"
 
@@ -31,11 +30,6 @@ public:
     void SetSignal(int, bool) const override;
 
 private:
-
-    bool IsRaspberryPi() const override
-    {
-        return false;
-    }
 
     string SetUp(bool) override;
 

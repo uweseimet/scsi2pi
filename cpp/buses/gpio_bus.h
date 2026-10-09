@@ -19,11 +19,6 @@ class GpioBus : public Bus
 
 public:
 
-    bool IsRaspberryPi() const override
-    {
-        return true;
-    }
-
     void CleanUp() override;
 
     void Reset() const override;

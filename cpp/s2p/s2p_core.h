@@ -69,7 +69,7 @@ private:
 
     unique_ptr<CommandExecutor> executor;
 
-    unique_ptr<Bus> bus;
+    shared_ptr<Bus> bus;
 
     PropertyHandler &property_handler = PropertyHandler::GetInstance();
 

@@ -230,8 +230,3 @@ TEST(VirtualBusTest, WaitHandshakeREQ)
     bus.SetSignal(PIN_REQ, false);
     EXPECT_FALSE(bus.WaitHandShake(PIN_REQ_MASK, true));
 }
-
-TEST(VirtualBusTest, IsRaspberryPi)
-{
-    EXPECT_FALSE(BusFactory::GetInstance().CreateBus( { }, "")->IsRaspberryPi());
-}

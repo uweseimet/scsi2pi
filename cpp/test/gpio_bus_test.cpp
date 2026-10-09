@@ -8,15 +8,6 @@
 
 #include "mocks.h"
 
-TEST(GpioBusTest, IsRaspberryPi)
-{
-    MockGpioBus standard_bus(true);
-    MockGpioBus full_bus(false);
-
-    EXPECT_TRUE(standard_bus.IsRaspberryPi());
-    EXPECT_TRUE(full_bus.IsRaspberryPi());
-}
-
 TEST(GpioBusTest, SetUp)
 {
     MockGpioBus standard_bus(true);

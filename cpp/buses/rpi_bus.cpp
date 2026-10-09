@@ -428,10 +428,10 @@ int RpiBus::TargetReceiveHandShake(data_in_t buf)
     return GpioBus::TargetReceiveHandShake(buf);
 }
 
-int RpiBus::TargetSendHandShake(data_out_t buf, int daynaport_delay)
+int RpiBus::TargetSendHandShake(data_out_t buf, int daynaport_delay_after_bytes)
 {
     const IrqLock lock(*this);
-    return GpioBus::TargetSendHandShake(buf, daynaport_delay);
+    return GpioBus::TargetSendHandShake(buf, daynaport_delay_after_bytes);
 }
 
 uint8_t RpiBus::InitiatorMsgInHandShake()

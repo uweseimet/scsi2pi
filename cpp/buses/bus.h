@@ -45,8 +45,6 @@ public:
 
     virtual bool GetSignal(int) const;
 
-    virtual bool IsRaspberryPi() const = 0;
-
     virtual void SetDataDirIn(bool) const = 0;
 
     virtual bool WaitHandShake(int, bool) const;

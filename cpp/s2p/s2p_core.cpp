@@ -17,6 +17,7 @@
 #endif
 #include <sys/stat.h>
 #include "buses/bus_factory.h"
+#include "buses/gpio_bus.h"
 #include "command/command_context.h"
 #include "command/command_dispatcher.h"
 #include "command/command_image_support.h"
@@ -222,7 +223,7 @@ int S2p::Run(span<char*> args)
 
     DisplayAttachedDevices();
 
-    if (!bus->IsRaspberryPi()) {
+    if (dynamic_cast<GpioBus*>(bus.get()) == nullptr) {
         cout << "This platform is not a Raspberry Pi, functionality is limited\n" << flush;
     }
 
