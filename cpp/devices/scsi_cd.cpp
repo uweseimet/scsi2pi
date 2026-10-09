@@ -70,42 +70,52 @@ void ScsiCd::ReadToc()
 
     const int track = GetCdbByte(6);
 
-    // Track must be 1, except for lead out track ($AA)
+    // The starting track must be 0 (first track), 1, or the lead-out track ($AA)
     if (track > 1 && track != 0xaa) {
         throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 
-    uint8_t track_number = 1;
-    uint32_t track_address = first_lba;
-    if (track && !track_initialized) {
-        if (track != 0xaa) {
-            throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
+    const bool msf = GetCdbByte(1) & 0x02;
+
+    auto &buf = GetController()->GetBuffer();
+
+    // Header (4 bytes) + at most two track descriptors (8 bytes each)
+    fill_n(buf.data(), 20, 0);
+
+    int offset = 4;
+
+    const auto add_descriptor = [&buf, &offset, &msf](uint8_t track_number, uint32_t address) {
+        // Byte 0 is reserved, byte 1 is ADR (upper nibble) and CONTROL (lower nibble):
+        // ADR 1 = position data in Q sub-channel, CONTROL 4 = data track
+        buf[offset + 1] = 0x14;
+        buf[offset + 2] = track_number;
+        // Byte 3 is reserved, bytes 4-7 contain the track start address
+        if (msf) {
+            LBAtoMSF(address, span(buf.data() + offset + 4, 4));
+        } else {
+            SetInt32(buf, offset + 4, address);
         }
 
-        track_number = 0xaa;
-        track_address = last_lba + 1;
+        offset += 8;
+    };
+
+    // There is only one data track. It is returned unless only the lead-out was requested.
+    if (track != 0xaa) {
+        add_descriptor(1, first_lba);
     }
 
-    const int length = min(GetCdbInt16(7), 12);
-    auto &buf = GetController()->GetBuffer();
-    fill_n(buf.data(), length, 0);
+    // The lead-out track is always the last descriptor
+    add_descriptor(0xaa, last_lba + 1);
 
     // TOC data length, excluding this field itself
-    SetInt16(buf, 0, 10);
+    SetInt16(buf, 0, offset - 2);
     // First track number
     buf[2] = 1;
     // Last track number
     buf[3] = 1;
-    // Data track, not audio track
-    buf[5] = 0x14;
-    buf[6] = track_number;
 
-    // Track address in the requested format
-    if (GetCdbByte(1) & 0x02) {
-        LBAtoMSF(track_address, span(buf.data() + 8, buf.size() - 8));
-    } else {
-        SetInt16(buf, 10, track_address);
-    }
+    // The TOC data length field is not affected by the allocation length
+    const int length = min(GetCdbInt16(7), offset);
 
     DataInPhase(length);
 }
@@ -165,20 +175,19 @@ int ScsiCd::ReadData(data_in_t buf)
 
 void ScsiCd::LBAtoMSF(uint32_t lba, span<uint8_t> msf)
 {
-    uint32_t minutes = lba / (75 * 60);
-    uint32_t seconds = (lba / 75) % 60;
-    const uint32_t frames = lba % 75;
+    // The base point is minutes=0, seconds=2, frames=0, i.e. an offset of 150 frames
+    const uint64_t total_frames = static_cast<uint64_t>(lba) + 2 * 75;
 
-    // The base point is minutes=0, seconds=2, frames=0
-    seconds += 2;
-    if (seconds >= 60) {
-        seconds -= 60;
-        ++minutes;
+    uint64_t minutes = total_frames / (60 * 75);
+    uint64_t seconds = (total_frames / 75) % 60;
+    uint64_t frames = total_frames % 75;
+
+    // MSF cannot represent more than 255 minutes
+    if (minutes > 0xff) {
+        minutes = 0xff;
+        seconds = 59;
+        frames = 74;
     }
-
-    assert(minutes < 0x100);
-    assert(seconds < 60);
-    assert(frames < 75);
 
     msf[0] = 0x00;
     msf[1] = static_cast<uint8_t>(minutes);

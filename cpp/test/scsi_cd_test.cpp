@@ -110,9 +110,6 @@ TEST(ScsiCdTest, ReadToc)
     controller->SetCdbByte(6, 2);
     Dispatch(cd, READ_TOC, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB, "Invalid track number");
 
-    controller->SetCdbByte(6, 1);
-    Dispatch(cd, READ_TOC, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB, "Uninitialized track");
-
     // Lead out track
     controller->SetCdbByte(6, 0xaa);
     EXPECT_CALL(*controller, DataIn);
