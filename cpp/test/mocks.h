@@ -9,7 +9,7 @@
 #pragma once
 
 #include <gmock/gmock.h>
-#include "buses/bus.h"
+#include "buses/gpio_bus.h"
 #include "controllers/controller.h"
 #include "devices/optical_memory.h"
 #include "devices/sasi_hd.h"
@@ -43,6 +43,29 @@ public:
     MockBus()
     {
         SetSignals(0xffffffff);
+    }
+};
+
+class MockGpioBus : public GpioBus
+{
+    FRIEND_TEST(GpioBusTest, SetUp);
+    FRIEND_TEST(GpioBus, GetPinTad);
+    FRIEND_TEST(GpioBus, GetPinInd);
+    FRIEND_TEST(GpioBus, GetPinDtd);
+    FRIEND_TEST(GpioBus, SetBSY);
+    FRIEND_TEST(GpioBus, SetSEL);
+    FRIEND_TEST(GpioBus, SetDataDirIn);
+
+public:
+
+    MOCK_METHOD(void, SetDAT, (uint8_t), (const, override));
+    MOCK_METHOD(void, Acquire, (), (const, override));
+    MOCK_METHOD(void, SetSignal, (int, bool), (const, override));
+    MOCK_METHOD(void, PinSetSignal, (int, bool), (const, override));
+    MOCK_METHOD(void, WaitNanoSeconds, (bool), (const, override));
+
+    MockGpioBus(bool s) : GpioBus(s)
+    {
     }
 };
 
