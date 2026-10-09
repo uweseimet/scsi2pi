@@ -418,68 +418,38 @@ void RpiBus::SetSignalDriveStrength(uint32_t drive) const
 
 int RpiBus::TargetCommandHandShake(data_in_t buf)
 {
-    DisableIRQ();
-
-    const auto count = GpioBus::TargetCommandHandShake(buf);
-
-    EnableIRQ();
-
-    return count;
+    const IrqLock lock(*this);
+    return GpioBus::TargetCommandHandShake(buf);
 }
 
 int RpiBus::TargetReceiveHandShake(data_in_t buf)
 {
-    DisableIRQ();
-
-    const auto count = GpioBus::TargetReceiveHandShake(buf);
-
-    EnableIRQ();
-
-    return count;
+    const IrqLock lock(*this);
+    return GpioBus::TargetReceiveHandShake(buf);
 }
 
 int RpiBus::TargetSendHandShake(data_out_t buf, int daynaport_delay)
 {
-    DisableIRQ();
-
-    const auto count = GpioBus::TargetSendHandShake(buf, daynaport_delay);
-
-    EnableIRQ();
-
-    return count;
+    const IrqLock lock(*this);
+    return GpioBus::TargetSendHandShake(buf, daynaport_delay);
 }
 
 uint8_t RpiBus::InitiatorMsgInHandShake()
 {
-    DisableIRQ();
-
-    const uint8_t msg = GpioBus::InitiatorMsgInHandShake();
-
-    EnableIRQ();
-
-    return msg;
+    const IrqLock lock(*this);
+    return GpioBus::InitiatorMsgInHandShake();
 }
 
 int RpiBus::InitiatorReceiveHandShake(data_in_t buf)
 {
-    DisableIRQ();
-
-    const auto count = GpioBus::InitiatorReceiveHandShake(buf);
-
-    EnableIRQ();
-
-    return count;
+    const IrqLock lock(*this);
+    return GpioBus::InitiatorReceiveHandShake(buf);
 }
 
 int RpiBus::InitiatorSendHandShake(data_out_t buf)
 {
-    DisableIRQ();
-
-    const auto count = GpioBus::InitiatorSendHandShake(buf);
-
-    EnableIRQ();
-
-    return count;
+    const IrqLock lock(*this);
+    return GpioBus::InitiatorSendHandShake(buf);
 }
 
 // nanosleep() does not provide the required resolution, which causes issues when reading data from the bus.

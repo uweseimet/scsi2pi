@@ -123,4 +123,25 @@ private:
 
     // Data setting table for data pins
     array<uint32_t, 256> tblDatSet = { };
+
+    class IrqLock final
+    {
+
+    public:
+
+        explicit IrqLock(RpiBus &b) : bus(b)
+        {
+            bus.DisableIRQ();
+        }
+        ~IrqLock()
+        {
+            bus.EnableIRQ();
+        }
+        IrqLock(const IrqLock&) = delete;
+        IrqLock& operator=(const IrqLock&) = delete;
+
+    private:
+
+        RpiBus &bus;
+    };
 };
