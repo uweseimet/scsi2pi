@@ -205,6 +205,8 @@ void Disk::FormatUnit()
 {
     CheckReady();
 
+    CheckWritePreconditions();
+
     // FMTDATA (0x10) is unsupported, and if FMTDATA is 0, CmpList and Defect List Format must also be 0
     if (GetCdbByte(1) & 0x1f) {
         throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
@@ -515,7 +517,9 @@ void Disk::ReadFormatCapacities()
     auto &buf = GetController()->GetBuffer();
     SetInt32(buf, 0, 0);
     SetInt32(buf, 4, static_cast<uint32_t>(GetBlockCount()));
-    SetInt32(buf, 8, GetBlockSize());
+    // Formatted media
+    buf[8] = 2;
+    SetInt24(buf, 9, GetBlockSize());
 
     int offset = 12;
     if (!IsReadOnly()) {
@@ -578,7 +582,9 @@ void Disk::ChangeBlockSize(uint32_t new_size)
 
         if (cache) {
             FlushCache();
-            SetUpCache();
+            if (!SetUpCache()) {
+                throw ScsiException(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
+            }
         }
     }
 }

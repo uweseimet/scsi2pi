@@ -34,6 +34,6 @@ private:
         { 512 * 446325, { 512, 446325 } },
         // 540 MiB, 512 bytes per sector, 1041500 sectors
         { 512 * 1041500, { 512, 1041500 } },
-        // 640 MiB, 20248 bytes per sector, 310352 sectors
+        // 640 MiB, 2048 bytes per sector, 310352 sectors
         { 2048 * 310352, { 2048, 310352 } } };
 };

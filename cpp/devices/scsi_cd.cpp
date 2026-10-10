@@ -2,8 +2,6 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2001-2006 ＰＩ．(ytanaka@ipc-tokai.or.jp)
-// Copyright (C) 2014-2020 GIMONS
 // Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
@@ -41,8 +39,6 @@ void ScsiCd::Open()
 {
     assert(!IsReady());
 
-    track_initialized = false;
-
     // This call cannot fail, the method argument is always valid
     SetBlockSize(GetConfiguredBlockSize() ? GetConfiguredBlockSize() : 2048);
 
@@ -60,8 +56,7 @@ void ScsiCd::Open()
 void ScsiCd::CreateDataTrack()
 {
     first_lba = 0;
-    last_lba = static_cast<int>(GetBlockCount()) - 1;
-    track_initialized = true;
+    last_lba = static_cast<uint32_t>(GetBlockCount()) - 1;
 }
 
 void ScsiCd::ReadToc()
@@ -84,15 +79,17 @@ void ScsiCd::ReadToc()
 
     int offset = 4;
 
-    const auto add_descriptor = [&buf, &offset, &msf](uint8_t track_number, uint32_t address) {
-        // Byte 0 is reserved, byte 1 is ADR (upper nibble) and CONTROL (lower nibble):
-        // ADR 1 = position data in Q sub-channel, CONTROL 4 = data track
+    const auto add_descriptor = [this, &buf, &offset, msf](uint8_t track_number, uint32_t address) {
+        // ADR (position data in Q sub-channel) and CONTROL (data track)
         buf[offset + 1] = 0x14;
         buf[offset + 2] = track_number;
-        // Byte 3 is reserved, bytes 4-7 contain the track start address
         if (msf) {
-            LBAtoMSF(address, span(buf.data() + offset + 4, 4));
+            // Convert logical blocks to 2048-byte frames, rounding up so that a lead-out address
+            // that is not a multiple of the frame size is never reported too early
+            const uint64_t frames = (static_cast<uint64_t>(address) * GetBlockSize() + 2048 - 1) / 2048;
+            LBAtoMSF(static_cast<uint32_t>(min<uint64_t>(frames, UINT32_MAX)), span(buf.data() + offset + 4, 4));
         } else {
+            // Track start address
             SetInt32(buf, offset + 4, address);
         }
 
@@ -114,10 +111,7 @@ void ScsiCd::ReadToc()
     // Last track number
     buf[3] = 1;
 
-    // The TOC data length field is not affected by the allocation length
-    const int length = min(GetCdbInt16(7), offset);
-
-    DataInPhase(length);
+    DataInPhase(min(GetCdbInt16(7), offset));
 }
 
 void ScsiCd::ModeSelect(cdb_t cdb, data_out_t buf, int offset)
@@ -150,27 +144,6 @@ void ScsiCd::AddDeviceParametersPage(map<int, vector<byte>> &pages, bool changea
     }
 
     pages[13] = buf;
-}
-
-int ScsiCd::ReadData(data_in_t buf)
-{
-    CheckReady();
-
-    if (const auto lba = static_cast<uint32_t>(GetNextSector()); first_lba > lba || last_lba < lba) {
-        throw ScsiException(ILLEGAL_REQUEST, LBA_OUT_OF_RANGE);
-    }
-
-    if (!track_initialized) {
-        SetBlockCount(last_lba - first_lba + 1);
-
-        if (!InitCache(GetFilename())) {
-            throw ScsiException(MEDIUM_ERROR, READ_ERROR);
-        }
-
-        track_initialized = true;
-    }
-
-    return Disk::ReadData(buf);
 }
 
 void ScsiCd::LBAtoMSF(uint32_t lba, span<uint8_t> msf)

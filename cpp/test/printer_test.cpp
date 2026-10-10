@@ -120,7 +120,8 @@ TEST_F(PrinterTest, SynchronizeBuffer)
     params["cmd"] = "false %f";
     printer->SetParams(params);
 
-    Dispatch(printer, SYNCHRONIZE_BUFFER, ABORTED_COMMAND, NO_ADDITIONAL_SENSE_INFORMATION);
+    Dispatch(printer, SYNCHRONIZE_BUFFER);
+    EXPECT_EQ(GOOD, controller->GetStatus());
 
     controller->SetCdbByte(0, to_underlying(PRINT));
     controller->SetTransferSize(4, 4);

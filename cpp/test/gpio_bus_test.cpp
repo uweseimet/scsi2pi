@@ -52,6 +52,7 @@ TEST(GpioBus, SetBSY)
 
     EXPECT_CALL(bus, PinSetSignal(PIN_ACT, true));
     EXPECT_CALL(bus, PinSetSignal(bus.GetPinTad(), true));
+    EXPECT_CALL(bus, SetSignal(PIN_BSY, true));
     bus.SetBSY(true);
 }
 
@@ -60,6 +61,7 @@ TEST(GpioBus, SetSEL)
     MockGpioBus bus(false);
 
     EXPECT_CALL(bus, PinSetSignal(PIN_ACT, true));
+    EXPECT_CALL(bus, SetSignal(PIN_SEL, true));
     bus.SetSEL(true);
 }
 

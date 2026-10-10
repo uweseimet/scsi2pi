@@ -23,6 +23,7 @@ using namespace memory_util;
 using namespace s2p_util;
 using namespace scsi_util;
 using namespace sg_util;
+using enum ScsiCommand;
 
 ScsiGeneric::ScsiGeneric(int lun, const string &d) : PrimaryDevice(SCSG, lun), device(d)
 {
@@ -69,7 +70,7 @@ void ScsiGeneric::Dispatch(ScsiCommand cmd)
     }
 
     // Convert READ/WRITE(6) to READ/WRITE(10) because some drives do not support READ/WRITE(6)
-    if (cmd == ScsiCommand::READ_6 || cmd == ScsiCommand::WRITE_6) {
+    if (cmd == READ_6 || cmd == WRITE_6) {
         const int transfer_length = local_cdb[4] ? local_cdb[4] : 256;
 
         local_cdb.push_back(0);
@@ -81,7 +82,7 @@ void ScsiGeneric::Dispatch(ScsiCommand cmd)
         // Sector number
         SetInt32(local_cdb, 2, GetInt24(local_cdb, 1));
         local_cdb[1] = 0;
-        local_cdb[0] = cmd == ScsiCommand::WRITE_6 ? 0x2a : 0x28;
+        local_cdb[0] = cmd == WRITE_6 ? 0x2a : 0x28;
     }
 
     const auto &meta_data = command_meta_data.GetCdbMetaData(cmd);
@@ -89,7 +90,7 @@ void ScsiGeneric::Dispatch(ScsiCommand cmd)
     byte_count = meta_data.block_size ? GetAllocationLength(local_cdb) * block_size : GetAllocationLength(local_cdb);
 
     // FORMAT UNIT is special because the parameter list length can be part of the data sent with DATA OUT
-    if (cmd == ScsiCommand::FORMAT && (static_cast<int>(local_cdb[1]) & 0x10)) {
+    if (cmd == FORMAT && (static_cast<int>(local_cdb[1]) & 0x10)) {
         // There must at least be the format list header, which has to be evaluated at the beginning of DATA OUT
         byte_count = 4;
     }
@@ -97,13 +98,13 @@ void ScsiGeneric::Dispatch(ScsiCommand cmd)
     remaining_count = byte_count;
 
     // There is no explicit LUN support, the SG driver maps each LUN to a device file
-    if (GetController()->GetEffectiveLun() && cmd != ScsiCommand::INQUIRY) {
+    if (GetController()->GetEffectiveLun() && cmd != INQUIRY) {
         throw ScsiException(ILLEGAL_REQUEST, LOGICAL_UNIT_NOT_SUPPORTED);
     }
 
     auto &buf = GetController()->GetBuffer();
 
-    if (cmd == ScsiCommand::REQUEST_SENSE && deferred_sense_data_valid) {
+    if (cmd == REQUEST_SENSE && deferred_sense_data_valid) {
         memcpy(buf.data(), deferred_sense_data.data(), deferred_sense_data.size());
         deferred_sense_data_valid = false;
 
@@ -125,7 +126,7 @@ void ScsiGeneric::Dispatch(ScsiCommand cmd)
 
     // FORMAT UNIT needs special handling because of its implicit DATA OUT phase
     if (meta_data.has_data_out) {
-        DataOutPhase(chunk_size || cmd != ScsiCommand::FORMAT ? chunk_size : -1);
+        DataOutPhase(chunk_size || cmd != FORMAT ? chunk_size : -1);
     }
     else {
         GetController()->SetCurrentLength(byte_count);
@@ -141,7 +142,7 @@ int ScsiGeneric::ReadData(data_in_t buf)
 int ScsiGeneric::WriteData(cdb_t, data_out_t buf, int length)
 {
     // Evaluate the FORMAT UNIT format list header with the first chunk, send the command when all paramaeters are available
-    if (static_cast<ScsiCommand>(local_cdb[0]) == ScsiCommand::FORMAT
+    if (static_cast<ScsiCommand>(local_cdb[0]) == FORMAT
         && (static_cast<int>(local_cdb[1]) & 0x10)) {
         if (format_header.empty()) {
             if (buf.size() < 4) {
@@ -192,7 +193,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
     io_hdr.cmd_len = static_cast<uint8_t>(local_cdb.size());
 
     io_hdr.timeout = (
-        local_cdb[0] == to_underlying(ScsiCommand::FORMAT) ? TIMEOUT_FORMAT_SECONDS : TIMEOUT_DEFAULT_SECONDS) * 1000;
+        local_cdb[0] == to_underlying(FORMAT) ? TIMEOUT_FORMAT_SECONDS : TIMEOUT_DEFAULT_SECONDS) * 1000;
 
     // Check the log level in order to avoid an unnecessary time-consuming string construction
     if (GetController() && GetLogger().should_log(level::debug)) {
@@ -222,9 +223,9 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
 
     UpdateStartBlock(local_cdb, length / block_size);
 
-    // Replace SCSI level if an explicit level has been configured
-    if (static_cast<ScsiCommand>(local_cdb[0]) == ScsiCommand::INQUIRY
-        && PrimaryDevice::GetScsiLevel() != ScsiLevel::NONE) {
+    // Replace SCSI level if an explicit level has been configured (standard INQUIRY only)
+    if (static_cast<ScsiCommand>(local_cdb[0]) == INQUIRY && ((byte { local_cdb[1] } & byte { 0x03 }) == byte { 0 })
+        && transferred_length > 2 && PrimaryDevice::GetScsiLevel() != ScsiLevel::NONE) {
         buf[2] = to_underlying(GetScsiLevel());
     }
 
@@ -258,7 +259,7 @@ void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<const uint8
         status = to_underlying(GOOD);
     }
 
-    if (status == to_underlying(GOOD) && local_cdb[0] == to_underlying(ScsiCommand::INQUIRY)
+    if (status == to_underlying(GOOD) && local_cdb[0] == to_underlying(INQUIRY)
         && GetController() && GetController()->GetEffectiveLun()) {
         // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
         buf[0] = 0x7f;
@@ -276,10 +277,10 @@ void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<const uint8
 void ScsiGeneric::UpdateInternalBlockSize(span<uint8_t> buf, int length)
 {
     uint32_t size = block_size;
-    if (const auto cmd = static_cast<ScsiCommand>(local_cdb[0]); cmd == ScsiCommand::READ_CAPACITY_10 && length >= 8) {
+    if (const auto cmd = static_cast<ScsiCommand>(local_cdb[0]); cmd == READ_CAPACITY_10 && length >= 8) {
         size = GetInt32(buf, 4);
     }
-    else if (cmd == ScsiCommand::READ_CAPACITY_READ_LONG_16 && (static_cast<int>(local_cdb[1]) & 0x10) && length >= 12) {
+    else if (cmd == READ_CAPACITY_READ_LONG_16 && (static_cast<int>(local_cdb[1]) & 0x1f) && length >= 12) {
         size = GetInt32(buf, 8);
     }
 
@@ -296,7 +297,7 @@ string ScsiGeneric::GetDeviceData()
     byte_count = static_cast<int>(buf.size());
     remaining_count = byte_count;
 
-    local_cdb = { to_underlying(ScsiCommand::INQUIRY), 0, 0, 0, static_cast<uint8_t>(byte_count), 0 };
+    local_cdb = { to_underlying(INQUIRY), 0, 0, 0, static_cast<uint8_t>(byte_count), 0 };
 
     try {
         ReadWriteData(span(buf.data(), byte_count));
@@ -321,7 +322,7 @@ void ScsiGeneric::GetBlockSize()
     byte_count = static_cast<int>(buf.size());
     remaining_count = byte_count;
 
-    local_cdb = { to_underlying(ScsiCommand::READ_CAPACITY_10), 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    local_cdb = { to_underlying(READ_CAPACITY_10), 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
     try {
         // Trigger a block size update

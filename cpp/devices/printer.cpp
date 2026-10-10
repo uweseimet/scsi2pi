@@ -121,7 +121,9 @@ void Printer::SynchronizeBuffer()
 
         ++print_warning_count;
 
-        throw ScsiException(ABORTED_COMMAND);
+        StatusPhase();
+
+        return;
     }
 
     out.close();
@@ -172,7 +174,7 @@ int Printer::WriteData(cdb_t cdb, data_out_t buf, int l)
         // There is no C++ API that generates a file with a unique name
         const int fd = mkstemp(f.data());
         if (fd == -1) {
-            LogError("Can't create printer output file for pattern '{}': {}", filename,
+            LogError("Can't create printer output file for pattern '{}': {}", file_template,
                 system_error(errno, generic_category()).what());
             ++print_error_count;
             throw ScsiException(ABORTED_COMMAND);

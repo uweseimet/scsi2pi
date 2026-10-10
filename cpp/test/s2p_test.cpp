@@ -13,19 +13,6 @@
 #include "shared/s2p_util.h"
 #include "test_shared.h"
 
-static bool ParseBoolFlag(string_view arg, string_view opt, string_view flag_prefix, bool def)
-{
-    if (arg == opt || arg == flag_prefix || arg == string(opt) + "=true" || arg == string(flag_prefix) + "=true") {
-        return true;
-    }
-
-    if (arg == string(flag_prefix) + "=false" || arg == string(opt) + "=false") {
-        return false;
-    }
-
-    return def;
-}
-
 static void Usage()
 {
     cout << "Usage: s2p_test [options]\n"
@@ -41,12 +28,14 @@ int main(int argc, char *argv[])
 
     for (int i = 1; i < argc; ++i) {
         const string_view arg(argv[i]);
-        if (arg.rfind("-i", 0) == 0 || arg.rfind("--integration-tests", 0) == 0) {
-            integration_tests = ParseBoolFlag(arg, "-i", "--integration-tests", integration_tests);
-        } else if (arg.rfind("-l", 0) == 0 || arg.rfind("--enable-logging", 0) == 0) {
-            enable_logging = ParseBoolFlag(arg, "-l", "--enable-logging", enable_logging);
+
+        if (arg == "-l" || arg == "--enable-logging") {
+            enable_logging = true;
         }
-        else if (arg.rfind("-h", 0) == 0 || arg.rfind("--help", 0) == 0) {
+        else if (arg == "-i" || arg == "--integration-tests") {
+            integration_tests = true;
+        }
+        else if (arg == "-h" || arg == "--help") {
             cout << s2p_util::Banner("(Test Suite Driver)") << flush;
             Usage();
             return EXIT_SUCCESS;

@@ -147,16 +147,12 @@ void OpticalMemory::AddVendorPage(map<int, vector<byte>> &pages, bool changeable
             }
         }
 
-        // Format mode
-        buf[2] = byte { 0 };
-        // Format type
-        buf[3] = byte { 0 };
+        // Format mode and type (offsets 2 and 3) are already 0
+
         SetInt32(buf, 4, static_cast<uint32_t>(block_count));
         SetInt16(buf, 8, spare);
         SetInt16(buf, 10, bands);
     }
 
     pages[32] = buf;
-
-    return;
 }
