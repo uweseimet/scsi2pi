@@ -228,7 +228,8 @@ TEST(DiskTest, ReadFormatCapacities)
     auto &buf = controller->GetBuffer();
     EXPECT_EQ(40U, GetInt32(buf, 0));
     EXPECT_EQ(disk->GetBlockCount(), GetInt32(buf, 4));
-    EXPECT_EQ(disk->GetBlockSize(), GetInt32(buf, 8));
+    EXPECT_EQ(0x02U, buf[8]);
+    EXPECT_EQ(disk->GetBlockSize(), GetInt24(buf, 9));
     EXPECT_EQ(8192U, GetInt32(buf, 12));
     EXPECT_EQ(512U, GetInt32(buf, 16));
     EXPECT_EQ(4096U, GetInt32(buf, 20));
@@ -245,7 +246,8 @@ TEST(DiskTest, ReadFormatCapacities)
     buf = controller->GetBuffer();
     EXPECT_EQ(8U, GetInt32(buf, 0));
     EXPECT_EQ(disk->GetBlockCount(), GetInt32(buf, 4));
-    EXPECT_EQ(disk->GetBlockSize(), GetInt32(buf, 8));
+    EXPECT_EQ(0x02U, buf[8]);
+    EXPECT_EQ(disk->GetBlockSize(), GetInt24(buf, 9));
 }
 
 TEST(DiskTest, Read6)

@@ -121,7 +121,9 @@ void Printer::SynchronizeBuffer()
 
         ++print_warning_count;
 
-        throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
+        StatusPhase();
+
+        return;
     }
 
     out.close();
@@ -173,7 +175,7 @@ int Printer::WriteData(cdb_t cdb, data_out_t buf, int l)
         const int fd = mkstemp(f.data());
         if (fd == -1) {
             LogError(
-                fmt::format("Can't create printer output file for pattern '{}': {}", filename,
+                fmt::format("Can't create printer output file for pattern '{}': {}", file_template,
                     system_error(errno, generic_category()).what()));
             ++print_error_count;
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::IO_PROCESS_TERMINATED);
