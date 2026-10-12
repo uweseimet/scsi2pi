@@ -39,12 +39,24 @@ string PrimaryDevice::Init()
         });
     AddCommand(ScsiCommand::RESERVE_RESERVE_ELEMENT_6, [this]
         {
+            // 3rdPty, third-party device ID and Extent are not supported
+            if (GetCdbByte(1) & 0x1f) {
+                throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+            }
+
             reserving_initiator = controller->GetInitiatorId();
             StatusPhase();
         });
     AddCommand(ScsiCommand::RELEASE_RELEASE_ELEMENT_6, [this]
         {
-            DiscardReservation();
+            // 3rdPty, third-party device ID and Extent are not supported
+            if (GetCdbByte(1) & 0x1f) {
+                throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+            }
+
+            if (controller->GetInitiatorId() == reserving_initiator) {
+                DiscardReservation();
+            }
             StatusPhase();
         });
     AddCommand(ScsiCommand::SEND_DIAGNOSTIC, [this]
@@ -217,7 +229,7 @@ void PrimaryDevice::Inquiry()
 
     const auto &buf = HandleInquiry();
 
-    const int allocation_length = min(static_cast<int>(buf.size()), GetCdbInt16(3));
+    const int allocation_length = min(static_cast<int>(buf.size()), GetCdbByte(4));
 
     controller->CopyToBuffer(span(buf.data(), allocation_length));
 
@@ -293,8 +305,10 @@ void PrimaryDevice::RequestSense()
     DataInPhase(length);
 }
 
-void PrimaryDevice::SendDiagnostic() const
+void PrimaryDevice::SendDiagnostic()
 {
+    CheckReady();
+
     // Do not support parameter list
     if (GetCdbByte(3) || GetCdbByte(4)) {
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
@@ -319,7 +333,8 @@ void PrimaryDevice::CheckReady()
 
     // Return status if not ready
     if (!IsReady()) {
-        throw ScsiException(SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
+        throw ScsiException(SenseKey::NOT_READY,
+            IsRemovable() ? Asc::MEDIUM_NOT_PRESENT : Asc::INITIALIZING_COMMAND_REQUIRED);
     }
 }
 
@@ -345,11 +360,6 @@ vector<uint8_t> PrimaryDevice::HandleInquiry() const
 
 vector<byte> PrimaryDevice::HandleRequestSense() const
 {
-    // Return not ready only if there are no errors
-    if (sense_key == SenseKey::NO_SENSE && !IsReady()) {
-        throw ScsiException(SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT);
-    }
-
     vector<byte> buf(18);
 
     // In SCSI-1 mode, only return the extended format if more than 4 bytes have been requested

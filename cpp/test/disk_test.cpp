@@ -61,7 +61,7 @@ TEST(DiskTest, Rezero)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, ScsiCommand::REZERO_REWIND, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::REZERO_REWIND, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
         "REZERO must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -75,7 +75,7 @@ TEST(DiskTest, FormatUnit)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, ScsiCommand::FORMAT, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::FORMAT, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
         "FORMAT UNIT must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -87,13 +87,21 @@ TEST(DiskTest, FormatUnit)
     // FMTDATA
     controller->SetCdbByte(1, 0x10);
     Dispatch(disk, ScsiCommand::FORMAT, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+
+    // CmpList
+    controller->SetCdbByte(1, 0x08);
+    Dispatch(disk, ScsiCommand::FORMAT, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+
+    // Defect List Format
+    controller->SetCdbByte(1, 0x07);
+    Dispatch(disk, ScsiCommand::FORMAT, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
 }
 
 TEST(DiskTest, ReassignBlocks)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, ScsiCommand::REASSIGN_BLOCKS, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::REASSIGN_BLOCKS, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
         "REASSIGN must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -107,7 +115,7 @@ TEST(DiskTest, Seek6)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, ScsiCommand::SEEK_6, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::SEEK_6, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
         "SEEK(6) must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -129,7 +137,7 @@ TEST(DiskTest, Seek10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, ScsiCommand::SEEK_10, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::SEEK_10, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
         "SEEK(10) must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -151,7 +159,7 @@ TEST(DiskTest, ReadCapacity10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, ScsiCommand::READ_CAPACITY_10, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::READ_CAPACITY_10, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
         "READ CAPACITY(10) must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -181,7 +189,7 @@ TEST(DiskTest, ReadCapacity16)
 
     // Service action: READ CAPACITY(16), not READ LONG(16)
     controller->SetCdbByte(1, 0x10);
-    Dispatch(disk, ScsiCommand::READ_CAPACITY_READ_LONG_16, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::READ_CAPACITY_READ_LONG_16, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
         "READ CAPACITY(16) must fail because drive is not ready");
 
     // Service action: READ CAPACITY(16), not READ LONG(16)
@@ -208,7 +216,7 @@ TEST(DiskTest, ReadFormatCapacities)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, ScsiCommand::READ_FORMAT_CAPACITIES, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::READ_FORMAT_CAPACITIES, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
         "READ FORMAT CAPACITIES must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -220,7 +228,8 @@ TEST(DiskTest, ReadFormatCapacities)
     auto &buf = controller->GetBuffer();
     EXPECT_EQ(40U, GetInt32(buf, 0));
     EXPECT_EQ(disk->GetBlockCount(), GetInt32(buf, 4));
-    EXPECT_EQ(disk->GetBlockSize(), GetInt32(buf, 8));
+    EXPECT_EQ(0x02U, buf[8]);
+    EXPECT_EQ(disk->GetBlockSize(), GetInt24(buf, 9));
     EXPECT_EQ(8192U, GetInt32(buf, 12));
     EXPECT_EQ(512U, GetInt32(buf, 16));
     EXPECT_EQ(4096U, GetInt32(buf, 20));
@@ -237,14 +246,15 @@ TEST(DiskTest, ReadFormatCapacities)
     buf = controller->GetBuffer();
     EXPECT_EQ(8U, GetInt32(buf, 0));
     EXPECT_EQ(disk->GetBlockCount(), GetInt32(buf, 4));
-    EXPECT_EQ(disk->GetBlockSize(), GetInt32(buf, 8));
+    EXPECT_EQ(0x02U, buf[8]);
+    EXPECT_EQ(disk->GetBlockSize(), GetInt24(buf, 9));
 }
 
 TEST(DiskTest, Read6)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, ScsiCommand::READ_6, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::READ_6, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
         "READ(6) must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -271,7 +281,7 @@ TEST(DiskTest, Read10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, ScsiCommand::READ_10, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::READ_10, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
         "READ(10) must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -296,7 +306,7 @@ TEST(DiskTest, Read16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, ScsiCommand::READ_16, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::READ_16, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
         "READ(16) must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -321,7 +331,7 @@ TEST(DiskTest, Write6)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, ScsiCommand::WRITE_6, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::WRITE_6, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
         "WRITE(6) must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -355,7 +365,7 @@ TEST(DiskTest, Write10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, ScsiCommand::WRITE_10, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::WRITE_10, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
         "WRITE(10) must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -387,7 +397,7 @@ TEST(DiskTest, Write16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, ScsiCommand::WRITE_16, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::WRITE_16, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
         "WRITE(16) must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -419,7 +429,7 @@ TEST(DiskTest, Verify10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, ScsiCommand::VERIFY_10, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::VERIFY_10, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
         "VERIFY(10) must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -439,7 +449,7 @@ TEST(DiskTest, Verify16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, ScsiCommand::VERIFY_16, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::VERIFY_16, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
         "VERIFY(16) must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -459,7 +469,7 @@ TEST(DiskTest, ReadLong10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, ScsiCommand::READ_LONG_10, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::READ_LONG_10, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
         "READ LONG(10) must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -507,7 +517,7 @@ TEST(DiskTest, ReadLong16)
 
     // Service action: READ LONG(16), not READ CAPACITY(16)
     controller->SetCdbByte(1, 0x11);
-    Dispatch(disk, ScsiCommand::READ_CAPACITY_READ_LONG_16, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::READ_CAPACITY_READ_LONG_16, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
         "READ LONG(16) must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -556,7 +566,7 @@ TEST(DiskTest, WriteLong10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, ScsiCommand::WRITE_LONG_10, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::WRITE_LONG_10, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
         "WRITE LONG(10) must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -602,7 +612,7 @@ TEST(DiskTest, WriteLong16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, ScsiCommand::WRITE_LONG_16, SenseKey::NOT_READY, Asc::MEDIUM_NOT_PRESENT,
+    Dispatch(disk, ScsiCommand::WRITE_LONG_16, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
         "WRITE LONG(16) must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -720,7 +730,7 @@ TEST(DiskTest, ReadData)
 
     EXPECT_THAT([&] {disk.ReadData( {});}, Throws<ScsiException>(AllOf(
                 Property(&ScsiException::GetSenseKey, SenseKey::NOT_READY),
-                Property(&ScsiException::GetAsc, Asc::MEDIUM_NOT_PRESENT)))) << "Disk is not ready";
+                Property(&ScsiException::GetAsc, Asc::INITIALIZING_COMMAND_REQUIRED)))) << "Disk is not ready";
 }
 
 TEST(DiskTest, WriteData)
@@ -729,13 +739,22 @@ TEST(DiskTest, WriteData)
 
     EXPECT_THAT([&] {disk.WriteData( {}, {}, 0);}, Throws<ScsiException>(AllOf(
                 Property(&ScsiException::GetSenseKey, SenseKey::NOT_READY),
-                Property(&ScsiException::GetAsc, Asc::MEDIUM_NOT_PRESENT)))) << "Disk is not ready";
+                Property(&ScsiException::GetAsc, Asc::INITIALIZING_COMMAND_REQUIRED)))) << "Disk is not ready";
 }
 
 TEST(DiskTest, SynchronizeCache10)
 {
     auto [controller, disk] = CreateDisk();
 
+    Dispatch(disk, ScsiCommand::SYNCHRONIZE_CACHE_10, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
+        "SYNCHRONIZE CACHE(10) must fail because drive is not ready");
+    disk->SetReady(true);
+
+    controller->SetCdbByte(8, 1);
+    Dispatch(disk, ScsiCommand::SYNCHRONIZE_CACHE_10, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE,
+        "SYNCHRONIZE CACHE(10) must fail because the capacity is exceeded");
+
+    disk->SetBlockCount(1);
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
     Dispatch(disk, ScsiCommand::SYNCHRONIZE_CACHE_10);
@@ -746,6 +765,15 @@ TEST(DiskTest, SynchronizeCache16)
 {
     auto [controller, disk] = CreateDisk();
 
+    Dispatch(disk, ScsiCommand::SYNCHRONIZE_CACHE_SPACE_16, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
+        "SYNCHRONIZE CACHE(16) must fail because drive is not ready");
+    disk->SetReady(true);
+
+    controller->SetCdbByte(13, 1);
+    Dispatch(disk, ScsiCommand::SYNCHRONIZE_CACHE_SPACE_16, SenseKey::ILLEGAL_REQUEST, Asc::LBA_OUT_OF_RANGE,
+        "SYNCHRONIZE CACHE(16) must fail because the capacity is exceeded");
+
+    disk->SetBlockCount(1);
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
     Dispatch(disk, ScsiCommand::SYNCHRONIZE_CACHE_SPACE_16);
@@ -756,9 +784,18 @@ TEST(DiskTest, ReadDefectData)
 {
     auto [controller, disk] = CreateDisk();
 
-    EXPECT_CALL(*controller, DataIn);
+    Dispatch(disk, ScsiCommand::READ_DEFECT_DATA_10, SenseKey::NOT_READY, Asc::INITIALIZING_COMMAND_REQUIRED,
+        "READ DEFECT DATA(10) must fail because drive is not ready");
+    disk->SetReady(true);
+
+    // Plist, Glist and a reserved bit
+    controller->SetCdbByte(2, 0x58);
+    // Allocation length
+    controller->SetCdbByte(8, 255);
     Dispatch(disk, ScsiCommand::READ_DEFECT_DATA_10);
-    EXPECT_EQ(StatusCode::GOOD, controller->GetStatus());
+    EXPECT_EQ(0x00, controller->GetBuffer()[0]);
+    EXPECT_EQ(0x18, controller->GetBuffer()[1]);
+    EXPECT_EQ(0, GetInt16(controller->GetBuffer(), 2));
 }
 
 TEST(DiskTest, ChangeBlockSize)

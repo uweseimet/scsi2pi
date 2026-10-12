@@ -134,7 +134,7 @@ protected:
 
     virtual void Inquiry();
     virtual void RequestSense();
-    void SendDiagnostic() const;
+    void SendDiagnostic();
 
     virtual int ModeSense6() const
     {

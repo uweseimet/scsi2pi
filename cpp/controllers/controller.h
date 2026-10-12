@@ -51,9 +51,12 @@ private:
     bool TransferFromHost(int);
 
     void ParseMessage();
-    void RejectExtendedMessage();
+    void RejectMessage();
+    void LogExtendedMessage(size_t) const;
     void ProcessMessage();
     void ProcessEndOfMessage();
+
+    void BusDeviceReset();
 
     void RaiseDeferredError(SenseKey, Asc);
     void ProvideSenseData();

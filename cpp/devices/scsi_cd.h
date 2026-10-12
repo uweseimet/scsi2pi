@@ -22,7 +22,6 @@ public:
     void Open() override;
 
     void ModeSelect(cdb_t, data_out_t, int) override;
-    int ReadData(data_in_t) override;
 
     void SetUpModePages(map<int, vector<byte>>&, int, bool) const override;
 
@@ -38,6 +37,4 @@ private:
 
     uint32_t first_lba = 0;
     uint32_t last_lba = 0;
-
-    bool track_initialized = false;
 };

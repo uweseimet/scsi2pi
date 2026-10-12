@@ -93,11 +93,13 @@ string Disk::SetUp()
         });
     AddCommand(ScsiCommand::SYNCHRONIZE_CACHE_10, [this]
         {
+            CheckAndGetStartAndCount();
             FlushCache();
             StatusPhase();
         });
     AddCommand(ScsiCommand::SYNCHRONIZE_CACHE_SPACE_16, [this]
         {
+            CheckAndGetStartAndCount();
             FlushCache();
             StatusPhase();
         });
@@ -167,7 +169,7 @@ bool Disk::SetUpCache()
 {
     assert(caching_mode != PbCachingMode::DEFAULT);
 
-    if (!GetSupportedBlockSizes().contains(GetBlockSize())) {
+    if (GetBlockSize() % 512 || !GetSupportedBlockSizes().contains(GetBlockSize())) {
         warn("Using non-standard sector size of {} bytes", GetBlockSize());
         if (caching_mode == PbCachingMode::PISCSI) {
             caching_mode = PbCachingMode::LINUX;
@@ -194,8 +196,8 @@ bool Disk::InitCache(const string &path)
 
 void Disk::FlushCache()
 {
-    if (cache) {
-        cache->Flush();
+    if (cache && !cache->Flush()) {
+        throw ScsiException(SenseKey::MEDIUM_ERROR, Asc::WRITE_ERROR);
     }
 }
 
@@ -203,8 +205,10 @@ void Disk::FormatUnit()
 {
     CheckReady();
 
-    // FMTDATA is not supported
-    if (GetCdbByte(1) & 0x10) {
+    CheckWritePreconditions();
+
+    // FMTDATA (0x10) is unsupported, and if FMTDATA is 0, CmpList and Defect List Format must also be 0
+    if (GetCdbByte(1) & 0x1f) {
         throw ScsiException(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
     }
 
@@ -249,12 +253,18 @@ void Disk::Verify()
     // Flush the cache according to the specification
     FlushCache();
 
-    WriteVerify(start, count);
+    // BytChk?
+    if (GetCdbByte(1) & 0x02) {
+        WriteVerify(start, count);
+    }
+    else {
+        StatusPhase();
+    }
 }
 
 void Disk::WriteVerify(uint64_t start, uint32_t count)
 {
-    // A transfer length of 0 is legal
+    // In case of a verify operation, just read the data sent by the initiator and do not report an error
     if (count) {
         next_sector = start;
 
@@ -299,7 +309,7 @@ void Disk::ReadWriteLong()
         FlushCache();
         caching_mode = PbCachingMode::LINUX;
         if (!InitCache(GetFilename())) {
-            throw IoException("Can't initialize cache");
+            throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
         linux_cache = static_pointer_cast<LinuxCache>(cache);
         LogDebug(fmt::format("Switched caching mode to '{}'", PbCachingMode_Name(caching_mode)));
@@ -322,16 +332,20 @@ void Disk::ReadWriteLong()
     }
 }
 
-void Disk::ReadDefectData10() const
+void Disk::ReadDefectData10()
 {
-    const int allocation_length = min(GetCdbInt16(7), 4);
+    CheckReady();
 
-    GetController()->SetCurrentLength(allocation_length);
+    const int transfer_length = min(GetCdbInt16(7), 4);
 
-    // The defect list is empty
-    fill_n(GetController()->GetBuffer().begin(), allocation_length, 0);
+    auto &buf = GetController()->GetBuffer();
 
-    DataInPhase(allocation_length);
+    // Length 0 (no defects)
+    fill_n(buf.begin(), transfer_length, 0);
+    buf[1] = GetCdbByte(2) & 0x1f;
+
+    GetController()->SetCurrentLength(transfer_length);
+    DataInPhase(transfer_length);
 }
 
 bool Disk::Eject(bool force)
@@ -383,7 +397,10 @@ void Disk::AddCachingPage(map<int, vector<byte>> &pages, bool changeable) const
     vector<byte> buf(12);
 
     if (!changeable) {
-        // Only read cache is valid
+        // WCE depends on the cache type
+        if (caching_mode == PbCachingMode::PISCSI) {
+            buf[2] = byte { 0x04 };
+        }
 
         // Disable pre-fetch transfer length
         SetInt16(buf, 0x04, -1);
@@ -498,8 +515,11 @@ void Disk::ReadFormatCapacities()
     CheckReady();
 
     auto &buf = GetController()->GetBuffer();
+    SetInt32(buf, 0, 0);
     SetInt32(buf, 4, static_cast<uint32_t>(GetBlockCount()));
-    SetInt32(buf, 8, GetBlockSize());
+    // Formatted media
+    buf[8] = 2;
+    SetInt24(buf, 9, GetBlockSize());
 
     int offset = 12;
     if (!IsReadOnly()) {
@@ -511,7 +531,7 @@ void Disk::ReadFormatCapacities()
         }
     }
 
-    SetInt32(buf, 0, offset - 4);
+    buf[3] = static_cast<uint8_t>(offset - 4);
 
     DataInPhase(min(offset, GetCdbInt16(7)));
 }
@@ -563,7 +583,9 @@ void Disk::ChangeBlockSize(uint32_t new_size)
 
         if (cache) {
             FlushCache();
-            SetUpCache();
+            if (!SetUpCache()) {
+                throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
+            }
         }
     }
 }
@@ -607,7 +629,8 @@ pair<uint64_t, uint32_t> Disk::CheckAndGetStartAndCount()
     // Accessing sector 0 without a data transfer is always allowed
     if (start || count) {
         // Check capacity
-        if (const uint64_t capacity = GetBlockCount(); start >= capacity || start + count > capacity) {
+        if (const uint64_t capacity = GetBlockCount(); start >= capacity || count > capacity
+            || start > capacity - count) {
             LogTrace(
                 fmt::format("Capacity of {} sector(s) exceeded: Trying to access sector {}, sector count {}", capacity,
                     start, count));

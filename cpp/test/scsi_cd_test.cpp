@@ -107,12 +107,18 @@ TEST(ScsiCdTest, ReadToc)
     cd->SetFilename(CreateTempFile(2048).string());
     cd->ValidateFile();
 
-    controller->SetCdbByte(6, 1);
+    controller->SetCdbByte(6, 2);
     Dispatch(cd, ScsiCommand::READ_TOC, SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB, "Invalid track number");
+
+    // Lead out track
+    controller->SetCdbByte(6, 0xaa);
+    EXPECT_CALL(*controller, DataIn);
+    Dispatch(cd, ScsiCommand::READ_TOC);
 
     controller->SetCdbByte(6, 0);
     EXPECT_CALL(*controller, DataIn);
     Dispatch(cd, ScsiCommand::READ_TOC);
+
     controller->SetCdbByte(1, 0x02);
     EXPECT_CALL(*controller, DataIn);
     Dispatch(cd, ScsiCommand::READ_TOC);
