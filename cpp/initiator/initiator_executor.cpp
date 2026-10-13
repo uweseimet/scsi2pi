@@ -266,8 +266,8 @@ void InitiatorExecutor::MsgIn()
     // The messages handled must match those in InitiatorMsgInHandShake()
     const uint8_t msg = bus.InitiatorMsgInHandShake();
     switch (msg) {
-    case -1:
-        case to_underlying(MessageCode::MESSAGE_REJECT):
+    case 0xff:
+    case to_underlying(MessageCode::MESSAGE_REJECT):
         initiator_logger.error("MESSAGE IN phase failed");
         break;
 

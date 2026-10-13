@@ -36,7 +36,15 @@ RELEASE_FLAGS ?= -O2 -DNDEBUG
 WARNING_FLAGS ?= -Wall -Wextra
 
 CPPFLAGS := -I$(CURDIR) -I$(BUILD_DIR) -D_FILE_OFFSET_BITS=64 $(SPDLOG_FLAGS) -DSPDLOG_NO_ATOMIC_LEVELS
-CXXFLAGS := -std=c++2b $(WARNING_FLAGS) -pthread -MD -MP
+CXXFLAGS := $(WARNING_FLAGS) -pthread -MD -MP
+
+# clang++ 16 on Bookworm still requires -std=c++2b, all other compilers support -std=c++23
+COMPILER_VERSION := $(shell $(CXX) -v 2>&1)
+ifneq (,$(findstring clang version 16.,$(COMPILER_VERSION)))
+    CXXFLAGS += -std=c++2b
+else
+    CXXFLAGS += -std=c++23
+endif
 
 ##   DEBUG=1       A Debug build includes the debugger symbols and
 ##                 disables compiler optimization. This is usually
