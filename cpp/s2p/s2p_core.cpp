@@ -222,10 +222,13 @@ int S2p::Run(span<char*> args)
     }
 
     DisplayAttachedDevices();
-
+#if __has_include (<linux/gpio.h>)
     if (dynamic_cast<GpioBus*>(bus.get()) == nullptr) {
         cout << "This platform is not a Raspberry Pi, functionality is limited\n" << flush;
     }
+#else
+    cout << "This platform is not a Raspberry Pi, functionality is limited\n" << flush;
+#endif
 
     instance = this;
 

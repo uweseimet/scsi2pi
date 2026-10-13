@@ -38,7 +38,7 @@ jobs:
         run: |
           mkdir -p $HOME/.sonar
           curl -fsSLo /tmp/scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux-x64.zip
-          unzip -o /tmp/scanner.zip -d $HOME/.sonar/
+          unzip -q -o /tmp/scanner.zip -d $HOME/.sonar/
 
       - name: Compile with coverage data
         run: bear -- make -j $(nproc) DEBUG=1 coverage

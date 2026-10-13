@@ -8,14 +8,6 @@ on:
         type: boolean
         description: Debug build
         default: true
-      board:
-        required: true
-        type: choice
-        description: Board type
-        options:
-        - FULLSPEC
-        - STANDARD
-        default: FULLSPEC
       branch:
         required: true
         type: string
@@ -27,10 +19,6 @@ on:
         required: false
         type: boolean
         default: true
-      board:
-        required: false
-        type: string
-        default: FULLSPEC
       branch:
         required: false
         type: string
@@ -47,9 +35,9 @@ jobs:
       - name: Compile
         run: |
           debug=${{ inputs.debug && 'DEBUG=1' || '' }} &&
-          make -j $(nproc) BOARD=${{ inputs.board }} $debug CXX=clang++
+          make -j $(nproc) $debug CXX=clang++
 
       - name: Run unit tests
         run: |
           debug=${{ inputs.debug && 'DEBUG=1' || '' }} &&
-          make test -j $(nproc) BOARD=${{ inputs.board }} $debug CXX=clang++
+          make test -j $(nproc) $debug CXX=clang++
