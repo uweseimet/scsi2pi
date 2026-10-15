@@ -15,6 +15,7 @@
 using namespace file_util;
 using namespace memory_util;
 using namespace s2p_util;
+using enum ScsiCommand;
 
 ScsiCd::ScsiCd(int l, bool scsi1) : Disk(SCCD, l, true, false, { 512, 2048 })
 {
@@ -27,7 +28,7 @@ ScsiCd::ScsiCd(int l, bool scsi1) : Disk(SCCD, l, true, false, { 512, 2048 })
 
 string ScsiCd::SetUp()
 {
-    AddCommand(ScsiCommand::READ_TOC, [this]
+    AddCommand(READ_TOC, [this]
         {
             ReadToc();
         });

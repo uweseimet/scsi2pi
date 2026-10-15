@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "abstract_controller.h"
+#include <cassert>
 #include <bit>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "buses/bus.h"
@@ -48,8 +49,6 @@ void AbstractController::Reset()
 
 bool AbstractController::ProcessPhase()
 {
-    assert(phase <= BusPhase::RESERVED);
-
     if (const auto index = to_underlying(phase); PHASE_HANDLERS[index]) {
         (this->*PHASE_HANDLERS[index])();
         return true;

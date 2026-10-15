@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 
 #include "primary_device.h"
+#include <cassert>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "controllers/abstract_controller.h"
 #include "shared/command_meta_data.h"
@@ -16,30 +17,31 @@
 using namespace memory_util;
 using namespace s2p_util;
 using namespace scsi_util;
+using enum ScsiCommand;
 
 string PrimaryDevice::Init()
 {
     // Mandatory SCSI primary commands
-    AddCommand(ScsiCommand::TEST_UNIT_READY, [this]
+    AddCommand(TEST_UNIT_READY, [this]
         {
             CheckReady();
             StatusPhase();
         });
-    AddCommand(ScsiCommand::INQUIRY, [this]
+    AddCommand(INQUIRY, [this]
         {
             Inquiry();
         });
-    AddCommand(ScsiCommand::REPORT_LUNS, [this]
+    AddCommand(REPORT_LUNS, [this]
         {
             ReportLuns();
         });
 
     // Optional commands supported by all device types
-    AddCommand(ScsiCommand::REQUEST_SENSE, [this]
+    AddCommand(REQUEST_SENSE, [this]
         {
             RequestSense();
         });
-    AddCommand(ScsiCommand::RESERVE_RESERVE_ELEMENT_6, [this]
+    AddCommand(RESERVE_RESERVE_ELEMENT_6, [this]
         {
             // 3rdPty, third-party device ID and Extent are not supported
             if (GetCdbByte(1) & 0x1f) {
@@ -49,7 +51,7 @@ string PrimaryDevice::Init()
             reserving_initiator = controller->GetInitiatorId();
             StatusPhase();
         });
-    AddCommand(ScsiCommand::RELEASE_RELEASE_ELEMENT_6, [this]
+    AddCommand(RELEASE_RELEASE_ELEMENT_6, [this]
         {
             // 3rdPty, third-party device ID and Extent are not supported
             if (GetCdbByte(1) & 0x1f) {
@@ -61,7 +63,7 @@ string PrimaryDevice::Init()
             }
             StatusPhase();
         });
-    AddCommand(ScsiCommand::SEND_DIAGNOSTIC, [this]
+    AddCommand(SEND_DIAGNOSTIC, [this]
         {
             SendDiagnostic();
         });
@@ -400,13 +402,12 @@ bool PrimaryDevice::CheckReservation(int initiator_id) const
 
     // A reservation is valid for all commands except those excluded below
     const auto cmd = static_cast<ScsiCommand>(GetCdbByte(0));
-    if (cmd == ScsiCommand::INQUIRY || cmd == ScsiCommand::REQUEST_SENSE
-        || cmd == ScsiCommand::RELEASE_RELEASE_ELEMENT_6) {
+    if (cmd == INQUIRY || cmd == REQUEST_SENSE || cmd == RELEASE_RELEASE_ELEMENT_6) {
         return true;
     }
 
     // PREVENT ALLOW MEDIUM REMOVAL is permitted if the prevent bit is 0
-    if (cmd == ScsiCommand::PREVENT_ALLOW_MEDIUM_REMOVAL && !(GetCdbByte(4) & 0x01)) {
+    if (cmd == PREVENT_ALLOW_MEDIUM_REMOVAL && !(GetCdbByte(4) & 0x01)) {
         return true;
     }
 

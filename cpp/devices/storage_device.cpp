@@ -17,14 +17,15 @@
 using namespace file_util;
 using namespace memory_util;
 using namespace s2p_util;
+using enum ScsiCommand;
 
 string StorageDevice::SetUp()
 {
-    AddCommand(ScsiCommand::START_STOP, [this]
+    AddCommand(START_STOP, [this]
         {
             StartStopUnit();
         });
-    AddCommand(ScsiCommand::PREVENT_ALLOW_MEDIUM_REMOVAL, [this]
+    AddCommand(PREVENT_ALLOW_MEDIUM_REMOVAL, [this]
         {
             PreventAllowMediumRemoval();
         });
@@ -44,7 +45,7 @@ void StorageDevice::CleanUp()
 void StorageDevice::Dispatch(ScsiCommand cmd)
 {
     // Media changes must be reported on the next access, i.e. not only for TEST UNIT READY
-    if (cmd != ScsiCommand::INQUIRY && cmd != ScsiCommand::REQUEST_SENSE && IsMediumChanged()) {
+    if (cmd != INQUIRY && cmd != REQUEST_SENSE && IsMediumChanged()) {
         assert(IsRemovable());
 
         SetMediumChanged(false);
@@ -217,14 +218,14 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length)
 
 pair<int, int> StorageDevice::EvaluateBlockDescriptors(ScsiCommand cmd, data_out_t buf, int size)
 {
-    assert(cmd == ScsiCommand::MODE_SELECT_6 || cmd == ScsiCommand::MODE_SELECT_10);
+    assert(cmd == MODE_SELECT_6 || cmd == MODE_SELECT_10);
 
-    const size_t required_length = cmd == ScsiCommand::MODE_SELECT_10 ? 8 : 4;
+    const size_t required_length = cmd == MODE_SELECT_10 ? 8 : 4;
     if (buf.size() < required_length) {
         throw ScsiException(ILLEGAL_REQUEST, PARAMETER_LIST_LENGTH_ERROR);
     }
 
-    const size_t descriptor_length = cmd == ScsiCommand::MODE_SELECT_10 ? GetInt16(buf, 6) : buf[3];
+    const size_t descriptor_length = cmd == MODE_SELECT_10 ? GetInt16(buf, 6) : buf[3];
     if (buf.size() < descriptor_length + required_length) {
         throw ScsiException(ILLEGAL_REQUEST, PARAMETER_LIST_LENGTH_ERROR);
     }

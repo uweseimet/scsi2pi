@@ -20,6 +20,7 @@ using namespace initiator_util;
 using namespace memory_util;
 using namespace s2p_util;
 using namespace scsi_util;
+using enum ScsiCommand;
 
 void S2pFormat::Banner(bool header) const
 {
@@ -150,7 +151,7 @@ vector<S2pFormat::FormatDescriptor> S2pFormat::GetFormatDescriptors()
         return {};
     }
 
-    cdb[0] = to_underlying(ScsiCommand::INQUIRY);
+    cdb[0] = to_underlying(INQUIRY);
     cdb[4] = static_cast<uint8_t>(buf.size());
     if (ExecuteCommand(cdb, buf, 3)) {
         cerr << "Error: Can't get drive data\n";
@@ -165,7 +166,7 @@ vector<S2pFormat::FormatDescriptor> S2pFormat::GetFormatDescriptors()
     cdb.resize(10);
     buf.resize(259);
     cdb[4] = 0;
-    cdb[0] = to_underlying(ScsiCommand::READ_FORMAT_CAPACITIES);
+    cdb[0] = to_underlying(READ_FORMAT_CAPACITIES);
     SetInt16(cdb, 7, static_cast<int>(buf.size()));
 
     if (ExecuteCommand(cdb, buf, 5)) {
@@ -233,7 +234,7 @@ string S2pFormat::Format(span<const S2pFormat::FormatDescriptor> descriptors, in
     vector<uint8_t> cdb(6);
     vector<uint8_t> parameters;
 
-    cdb[0] = to_underlying(ScsiCommand::FORMAT);
+    cdb[0] = to_underlying(FORMAT);
     if (n) {
         // FmtData
         cdb[1] = 0x17;

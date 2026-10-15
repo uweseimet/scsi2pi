@@ -21,6 +21,7 @@
 using namespace spdlog;
 using namespace memory_util;
 using namespace s2p_util;
+using enum ScsiCommand;
 
 Disk::Disk(PbDeviceType z, int l, bool supports_mode_select, bool supports_save_parameters,
     const set<uint32_t> &s)
@@ -31,99 +32,95 @@ Disk::Disk(PbDeviceType z, int l, bool supports_mode_select, bool supports_save_
 
 string Disk::SetUp()
 {
-    AddCommand(ScsiCommand::REZERO_REWIND, [this]
+    AddCommand(REZERO_REWIND, [this]
         {
             CheckReady();
             StatusPhase();
         });
-    AddCommand(ScsiCommand::FORMAT, [this]
+    AddCommand(FORMAT, [this]
         {
             FormatUnit();
         });
-    AddCommand(ScsiCommand::REASSIGN_BLOCKS, [this]
+    AddCommand(REASSIGN_BLOCKS, [this]
         {
             CheckReady();
             StatusPhase();
         });
-    AddCommand(ScsiCommand::READ_6, [this]
+    AddCommand(READ_6, [this]
         {
             Read();
         });
-    AddCommand(ScsiCommand::WRITE_6, [this]
+    AddCommand(WRITE_6, [this]
         {
             Write();
         });
-    AddCommand(ScsiCommand::SEEK_6, [this]
+    AddCommand(SEEK_6, [this]
         {
             CheckAndGetStartAndCount();
             StatusPhase();
         });
-    AddCommand(ScsiCommand::READ_CAPACITY_10, [this]
+    AddCommand(READ_CAPACITY_10, [this]
         {
             ReadCapacity10();
         });
-    AddCommand(ScsiCommand::READ_10, [this]
+    AddCommand(READ_10, [this]
         {
             Read();
         });
-    AddCommand(ScsiCommand::WRITE_10, [this]
+    AddCommand(WRITE_10, [this]
         {
             Write();
         });
-    AddCommand(ScsiCommand::READ_LONG_10, [this]
+    AddCommand(READ_LONG_10, [this]
         {
             ReadWriteLong();
         });
-    AddCommand(ScsiCommand::WRITE_LONG_10, [this]
+    AddCommand(WRITE_LONG_10, [this]
         {
             ReadWriteLong();
         });
-    AddCommand(ScsiCommand::WRITE_LONG_16, [this]
+    AddCommand(WRITE_LONG_16, [this]
         {
             ReadWriteLong();
         });
-    AddCommand(ScsiCommand::SEEK_10, [this]
+    AddCommand(SEEK_10, [this]
         {
             CheckAndGetStartAndCount();
             StatusPhase();
         });
-    AddCommand(ScsiCommand::VERIFY_10, [this]
+    AddCommand(VERIFY_10, [this]
         {
             Verify();
         });
-    AddCommand(ScsiCommand::SYNCHRONIZE_CACHE_10, [this]
+    AddCommand(SYNCHRONIZE_CACHE_10, [this]
         {
-            CheckAndGetStartAndCount();
-            FlushCache();
-            StatusPhase();
+            SynchronizeCache();
         });
-    AddCommand(ScsiCommand::SYNCHRONIZE_CACHE_SPACE_16, [this]
+    AddCommand(SYNCHRONIZE_CACHE_SPACE_16, [this]
         {
-            CheckAndGetStartAndCount();
-            FlushCache();
-            StatusPhase();
+            SynchronizeCache();
         });
-    AddCommand(ScsiCommand::READ_DEFECT_DATA_10, [this]
+    AddCommand(READ_DEFECT_DATA_10, [this]
         {
             ReadDefectData10();
         });
-    AddCommand(ScsiCommand::READ_16, [this]
+    AddCommand(READ_16, [this]
         {
             Read();
         });
-    AddCommand(ScsiCommand::WRITE_16, [this]
+    AddCommand(WRITE_16, [this]
         {
             Write();
         });
-    AddCommand(ScsiCommand::VERIFY_16, [this]
+    AddCommand(VERIFY_16, [this]
         {
             Verify();
         });
-    AddCommand(ScsiCommand::READ_CAPACITY_READ_LONG_16, [this]
+    AddCommand(READ_CAPACITY_READ_LONG_16, [this]
         {
             ReadCapacity16_ReadLong16();
         });
-    AddCommand(ScsiCommand::READ_FORMAT_CAPACITIES, [this]
+    AddCommand(READ_FORMAT_CAPACITIES, [this]
         {
             ReadFormatCapacities();
         });
@@ -332,6 +329,13 @@ void Disk::ReadWriteLong()
     }
 }
 
+void Disk::SynchronizeCache()
+{
+    CheckAndGetStartAndCount();
+    FlushCache();
+    StatusPhase();
+}
+
 void Disk::ReadDefectData10()
 {
     CheckReady();
@@ -451,7 +455,7 @@ int Disk::WriteData(cdb_t cdb, data_out_t buf, int l)
 
     const auto command = static_cast<ScsiCommand>(cdb[0]);
 
-    if (command == ScsiCommand::WRITE_LONG_10 || command == ScsiCommand::WRITE_LONG_16) {
+    if (command == WRITE_LONG_10 || command == WRITE_LONG_16) {
         auto linux_cache = dynamic_pointer_cast<LinuxCache>(cache);
         assert(linux_cache);
 
@@ -464,7 +468,7 @@ int Disk::WriteData(cdb_t cdb, data_out_t buf, int l)
         return l;
     }
 
-    if ((command != ScsiCommand::VERIFY_10 && command != ScsiCommand::VERIFY_16)
+    if ((command != VERIFY_10 && command != VERIFY_16)
         && !cache->WriteSectors(buf, next_sector, sector_transfer_count)) {
         throw ScsiException(MEDIUM_ERROR, WRITE_FAULT);
     }

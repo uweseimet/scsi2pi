@@ -99,6 +99,7 @@ using namespace s2p_interface_util;
 using namespace s2p_util;
 using enum SenseKey;
 using enum Asc;
+using enum ScsiCommand;
 
 HostServices::HostServices(int l) : PrimaryDevice(SCHS, l)
 {
@@ -109,15 +110,15 @@ HostServices::HostServices(int l) : PrimaryDevice(SCHS, l)
 
 string HostServices::SetUp()
 {
-    AddCommand(ScsiCommand::START_STOP, [this]
+    AddCommand(START_STOP, [this]
         {
             StartStopUnit();
         });
-    AddCommand(ScsiCommand::EXECUTE_OPERATION, [this]
+    AddCommand(EXECUTE_OPERATION, [this]
         {
             ExecuteOperation();
         });
-    AddCommand(ScsiCommand::RECEIVE_OPERATION_RESULTS, [this]
+    AddCommand(RECEIVE_OPERATION_RESULTS, [this]
         {
             ReceiveOperationResults();
         });
@@ -280,7 +281,7 @@ void HostServices::AddRealtimeClockPage(map<int, vector<byte>> &pages, bool chan
 
 int HostServices::WriteData(cdb_t cdb, data_out_t buf, int l)
 {
-    if (static_cast<ScsiCommand>(cdb[0]) != ScsiCommand::EXECUTE_OPERATION) {
+    if (static_cast<ScsiCommand>(cdb[0]) != EXECUTE_OPERATION) {
         throw ScsiException(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
     }
 

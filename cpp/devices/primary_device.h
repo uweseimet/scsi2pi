@@ -82,9 +82,10 @@ public:
 
     virtual string GetIdentifier() const = 0;
 
-    int GetDelayAfterBytes() const
+    virtual int GetDelayAfterBytes() const
     {
-        return delay_after_bytes;
+        // No delay
+        return -1;
     }
 
     bool CheckReservation(int) const;
@@ -122,9 +123,7 @@ public:
 
 protected:
 
-    PrimaryDevice(PbDeviceType t, int l, int delay = SEND_NO_DELAY) : Device(t, l), delay_after_bytes(delay)
-    {
-    }
+    using Device::Device;
 
     void AddCommand(ScsiCommand, const command&);
 
@@ -197,9 +196,6 @@ private:
     const CommandMetaData::CdbMetaData *meta_data = nullptr;
 
     array<command, 256> commands = { };
-
-    // Number of bytes during a transfer after which to delay for the Mac DaynaPort driver
-    int delay_after_bytes = SEND_NO_DELAY;
 
     int reserving_initiator = NOT_RESERVED;
 

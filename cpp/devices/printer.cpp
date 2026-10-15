@@ -38,6 +38,7 @@
 using namespace filesystem;
 using namespace memory_util;
 using namespace s2p_util;
+using enum ScsiCommand;
 
 Printer::Printer(int lun) : PrimaryDevice(SCLP, lun)
 {
@@ -53,15 +54,15 @@ string Printer::SetUp()
         return "Missing filename specifier '%f'";
     }
 
-    AddCommand(ScsiCommand::PRINT, [this]
+    AddCommand(PRINT, [this]
         {
             Print();
         });
-    AddCommand(ScsiCommand::SYNCHRONIZE_BUFFER, [this]
+    AddCommand(SYNCHRONIZE_BUFFER, [this]
         {
             SynchronizeBuffer();
         });
-    AddCommand(ScsiCommand::STOP_PRINT, [this]
+    AddCommand(STOP_PRINT, [this]
         {
             StatusPhase();
         });
@@ -159,7 +160,7 @@ void Printer::SynchronizeBuffer()
 
 int Printer::WriteData(cdb_t cdb, data_out_t buf, int l)
 {
-    if (cdb[0] != to_underlying(ScsiCommand::PRINT)) {
+    if (cdb[0] != to_underlying(PRINT)) {
         throw ScsiException(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
     }
 

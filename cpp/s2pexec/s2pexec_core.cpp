@@ -25,6 +25,7 @@ using namespace initiator_util;
 using namespace logger_util;
 using namespace s2p_util;
 using namespace scsi_util;
+using enum ScsiCommand;
 
 void S2pExec::CleanUp() const
 {
@@ -500,7 +501,7 @@ optional<SenseData> S2pExec::ExecuteCommand()
         }
     }
 
-    if (cdb[0] == to_underlying(ScsiCommand::REQUEST_SENSE)) {
+    if (cdb[0] == to_underlying(REQUEST_SENSE)) {
         vector<byte> sense_data;
         const size_t length = min(buffer.size(), static_cast<size_t>(18));
         transform(buffer.begin(), buffer.begin() + length, back_inserter(sense_data),

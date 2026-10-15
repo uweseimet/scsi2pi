@@ -47,6 +47,14 @@ TEST(S2pUtilTest, Split)
     v = Split("", ':', 1);
     EXPECT_EQ(1U, v.size());
     EXPECT_EQ("", v[0]);
+
+    v = Split("a_b_c", '_', 0);
+    EXPECT_EQ(1U, v.size());
+    EXPECT_EQ("a_b_c", v[0]);
+
+    v = Split("a_b_c", '_', -1);
+    EXPECT_EQ(1U, v.size());
+    EXPECT_EQ("a_b_c", v[0]);
 }
 
 TEST(S2pUtilTest, ToUpper)

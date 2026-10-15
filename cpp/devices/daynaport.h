@@ -56,6 +56,12 @@ public:
     void SetMcastAddr() const;
     void EnableInterface() const;
 
+    int GetDelayAfterBytes() const override
+    {
+        // Number of bytes during a transfer after which to delay for the Mac DaynaPort driver
+        return DAYNAPORT_READ_HEADER_SZ;
+    }
+
     vector<PbStatistics> GetStatistics() const override;
 
     static constexpr int CMD_SCSILINK_STATS = 0x09;

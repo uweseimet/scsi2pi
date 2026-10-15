@@ -62,7 +62,7 @@ private:
 
     int TargetCommandHandShake(data_in_t) override;
     int TargetReceiveHandShake(data_in_t) override;
-    int TargetSendHandShake(data_out_t, int = SEND_NO_DELAY) override;
+    int TargetSendHandShake(data_out_t, int) override;
     uint8_t InitiatorMsgInHandShake() override;
     int InitiatorReceiveHandShake(data_in_t) override;
     int InitiatorSendHandShake(data_out_t) override;

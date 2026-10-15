@@ -47,8 +47,8 @@ string GpioBus::SetUp(bool target)
 
 string GpioBus::SetUpSelectionEvent()
 {
-    const int chip_fd = open("/dev/gpiochip0", 0);
-    if (chip_fd == -1) {
+    const int fd = open("/dev/gpiochip0", 0);
+    if (fd == -1) {
         return "Can't open /dev/gpiochip0. If s2p is running (e.g. as a service), shut it down first.";
     }
 
@@ -59,11 +59,11 @@ string GpioBus::SetUpSelectionEvent()
     selevreq.eventflags = GPIOEVENT_REQUEST_FALLING_EDGE;
     selevreq.fd = -1;
 
-    if (ioctl(chip_fd, GPIO_GET_LINEEVENT_IOCTL, &selevreq) == -1) {
-        close(chip_fd);
+    if (ioctl(fd, GPIO_GET_LINEEVENT_IOCTL, &selevreq) == -1) {
+        close(fd);
         return "Can't register event request. If s2p is running (e.g. as a service), shut it down first.";
     }
-    close(chip_fd);
+    close(fd);
 
     epoll_fd = epoll_create1(EPOLL_CLOEXEC);
     if (epoll_fd == -1) {

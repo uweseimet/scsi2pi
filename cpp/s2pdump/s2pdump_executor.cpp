@@ -13,6 +13,7 @@
 #include "shared/scsi.h"
 
 using namespace memory_util;
+using enum ScsiCommand;
 
 void S2pDumpExecutor::TestUnitReady() const
 {
@@ -24,7 +25,7 @@ void S2pDumpExecutor::RequestSense() const
 {
     array<uint8_t, 6> cdb = { };
     array<uint8_t, 4> buf = { };
-    cdb[0] = to_underlying(ScsiCommand::REQUEST_SENSE);
+    cdb[0] = to_underlying(REQUEST_SENSE);
     cdb[4] = static_cast<uint8_t>(buf.size());
 
     RequestSense(cdb, buf);
@@ -33,7 +34,7 @@ void S2pDumpExecutor::RequestSense() const
 bool S2pDumpExecutor::Inquiry(span<uint8_t> buf) const
 {
     array<uint8_t, 6> cdb = { };
-    cdb[0] = to_underlying(ScsiCommand::INQUIRY);
+    cdb[0] = to_underlying(INQUIRY);
     cdb[4] = static_cast<uint8_t>(buf.size());
 
     return Inquiry(cdb, buf);
@@ -42,7 +43,7 @@ bool S2pDumpExecutor::Inquiry(span<uint8_t> buf) const
 bool S2pDumpExecutor::ModeSense6(span<uint8_t> buf) const
 {
     array<uint8_t, 6> cdb = { };
-    cdb[0] = to_underlying(ScsiCommand::MODE_SENSE_6);
+    cdb[0] = to_underlying(MODE_SENSE_6);
     cdb[1] = 0x08;
     cdb[2] = 0x3f;
     cdb[4] = static_cast<uint8_t>(buf.size());
@@ -54,7 +55,7 @@ set<int> S2pDumpExecutor::ReportLuns()
 {
     array<uint8_t, 512> buf = { };
     array<uint8_t, 12> cdb = { };
-    cdb[0] = to_underlying(ScsiCommand::REPORT_LUNS);
+    cdb[0] = to_underlying(REPORT_LUNS);
     SetInt16(cdb, 8, buf.size());
 
     return ReportLuns(cdb, buf);
@@ -69,7 +70,7 @@ pair<uint64_t, uint32_t> S2pDumpExecutor::ReadScsiCapacity() const
 {
     array<uint8_t, 14> buf = { };
     vector<uint8_t> cdb(10);
-    cdb[0] = to_underlying(ScsiCommand::READ_CAPACITY_10);
+    cdb[0] = to_underlying(READ_CAPACITY_10);
 
     if (ReadCapacity10(cdb, buf)) {
         return {0, 0};
@@ -81,7 +82,7 @@ pair<uint64_t, uint32_t> S2pDumpExecutor::ReadScsiCapacity() const
 
     if (static_cast<int32_t>(capacity) == -1) {
         cdb.resize(16);
-        cdb[0] = to_underlying(ScsiCommand::READ_CAPACITY_READ_LONG_16);
+        cdb[0] = to_underlying(READ_CAPACITY_READ_LONG_16);
         // READ CAPACITY(16), not READ LONG(16)
         cdb[1] = 0x10;
 
@@ -138,13 +139,13 @@ bool S2pDumpExecutor::ReadWrite(span<uint8_t> buf, uint32_t bstart, uint32_t ble
     vector<uint8_t> cdb;
     if (sasi) {
         cdb.resize(6);
-        cdb[0] = to_underlying(is_write ? ScsiCommand::WRITE_6 : ScsiCommand::READ_6);
+        cdb[0] = to_underlying(is_write ? WRITE_6 : READ_6);
         SetInt24(cdb, 1, bstart);
         cdb[4] = blength == 256 ? 0 : blength;
     }
     else {
         cdb.resize(10);
-        cdb[0] = to_underlying(is_write ? ScsiCommand::WRITE_10 : ScsiCommand::READ_10);
+        cdb[0] = to_underlying(is_write ? WRITE_10 : READ_10);
         SetInt32(cdb, 2, bstart);
         SetInt16(cdb, 7, blength);
     }
@@ -155,7 +156,7 @@ bool S2pDumpExecutor::ReadWrite(span<uint8_t> buf, uint32_t bstart, uint32_t ble
 void S2pDumpExecutor::SynchronizeCache() const
 {
     array<uint8_t, 10> cdb = { };
-    cdb[0] = to_underlying(ScsiCommand::SYNCHRONIZE_CACHE_10);
+    cdb[0] = to_underlying(SYNCHRONIZE_CACHE_10);
 
     SynchronizeCache(cdb);
 }
@@ -163,7 +164,7 @@ void S2pDumpExecutor::SynchronizeCache() const
 void S2pDumpExecutor::SpaceBack() const
 {
     array<uint8_t, 6> cdb = { };
-    cdb[0] = to_underlying(ScsiCommand::SPACE_6);
+    cdb[0] = to_underlying(SPACE_6);
     SetInt24(cdb, 2, -1);
 
     SpaceBack(cdb);
@@ -172,7 +173,7 @@ void S2pDumpExecutor::SpaceBack() const
 int S2pDumpExecutor::Rewind() const
 {
     array<uint8_t, 6> cdb = { };
-    cdb[0] = to_underlying(ScsiCommand::REZERO_REWIND);
+    cdb[0] = to_underlying(REZERO_REWIND);
 
     return Rewind(cdb);
 }
@@ -180,7 +181,7 @@ int S2pDumpExecutor::Rewind() const
 int S2pDumpExecutor::WriteFilemark() const
 {
     array<uint8_t, 6> cdb = { };
-    cdb[0] = to_underlying(ScsiCommand::WRITE_FILEMARKS_6);
+    cdb[0] = to_underlying(WRITE_FILEMARKS_6);
     SetInt24(cdb, 2, 1);
 
     return WriteFilemark(cdb);
@@ -191,7 +192,7 @@ int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
     // Restore
     if (length) {
         array<uint8_t, 6> cdb = { };
-        cdb[0] = to_underlying(ScsiCommand::WRITE_6);
+        cdb[0] = to_underlying(WRITE_6);
         SetInt24(cdb, 2, length);
 
         if (Write(cdb, buf, length)) {
@@ -205,7 +206,7 @@ int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
     bool has_error = false;
     while (true) {
         array<uint8_t, 6> cdb = { };
-        cdb[0] = to_underlying(ScsiCommand::READ_6);
+        cdb[0] = to_underlying(READ_6);
         SetInt24(cdb, 2, default_length);
 
         if (!Read(cdb, buf, default_length)) {
@@ -215,7 +216,7 @@ int S2pDumpExecutor::ReadWrite(span<uint8_t> buf, int length)
 
         array<uint8_t, 14> sense_data = { };
         array<uint8_t, 6> sense_cdb = { };
-        sense_cdb[0] = to_underlying(ScsiCommand::REQUEST_SENSE);
+        sense_cdb[0] = to_underlying(REQUEST_SENSE);
         sense_cdb[4] = static_cast<uint8_t>(sense_data.size());
         if (const int status = RequestSense(sense_cdb, sense_data); status == 0xff) {
             return status;

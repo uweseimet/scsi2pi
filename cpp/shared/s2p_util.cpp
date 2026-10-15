@@ -8,7 +8,6 @@
 
 #include "s2p_util.h"
 #include <algorithm>
-#include <cassert>
 #include <charconv>
 #include <clocale>
 #include <csignal>
@@ -26,8 +25,6 @@ string s2p_util::GetVersionString()
 
 vector<string> s2p_util::Split(string_view s, char separator, int limit)
 {
-    assert(limit >= 0);
-
     const size_t n = s.size();
     size_t pos = 0;
 

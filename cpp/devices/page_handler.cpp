@@ -14,11 +14,12 @@
 
 using namespace memory_util;
 using namespace s2p_util;
+using enum ScsiCommand;
 
 PageHandler::PageHandler(PrimaryDevice &d, bool m, bool p, bool b) : device(d), supports_mode_select(m), supports_save_parameters(
     p), supports_block_descriptors(b)
 {
-    device.AddCommand(ScsiCommand::MODE_SENSE_6, [this]
+    device.AddCommand(MODE_SENSE_6, [this]
         {
             ValidateCdb();
 
@@ -29,7 +30,7 @@ PageHandler::PageHandler(PrimaryDevice &d, bool m, bool p, bool b) : device(d), 
 
             device.DataInPhase(size);
         });
-    device.AddCommand(ScsiCommand::MODE_SENSE_10, [this]
+    device.AddCommand(MODE_SENSE_10, [this]
         {
             ValidateCdb();
 
@@ -41,11 +42,11 @@ PageHandler::PageHandler(PrimaryDevice &d, bool m, bool p, bool b) : device(d), 
             device.DataInPhase(size);
         });
 
-    device.AddCommand(ScsiCommand::MODE_SELECT_6, [this]
+    device.AddCommand(MODE_SELECT_6, [this]
         {
             ModeSelect(device.GetCdbByte(4));
         });
-    device.AddCommand(ScsiCommand::MODE_SELECT_10, [this]
+    device.AddCommand(MODE_SELECT_10, [this]
         {
             ModeSelect(device.GetCdbInt16(7));
         });

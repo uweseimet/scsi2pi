@@ -130,7 +130,7 @@ void Pi5Bus::SetDataDirIn(bool in) const
 
 int Pi5Bus::TargetSendHandShake(data_out_t buf, int daynaport_delay_after_bytes)
 {
-    if (!pio || buf.size() < MIN_PIO_BYTES || daynaport_delay_after_bytes != SEND_NO_DELAY) {
+    if (!pio || buf.size() < MIN_PIO_BYTES || daynaport_delay_after_bytes > 0) {
         return Bus::TargetSendHandShake(buf, daynaport_delay_after_bytes);
     }
 

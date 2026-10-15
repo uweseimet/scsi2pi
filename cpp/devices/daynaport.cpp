@@ -30,10 +30,11 @@ using namespace spdlog;
 using namespace memory_util;
 using namespace network_util;
 using namespace s2p_util;
+using enum ScsiCommand;
 
 // The MacOS DaynaPort driver needs to have a delay after the size/flags field of the read response.
 // It appears as if the real DaynaPort hardware indeed has this delay.
-DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, lun, DAYNAPORT_READ_HEADER_SZ)
+DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, lun)
 {
     // These data are required by the DaynaPort drivers
     SetProductData( { "Dayna", "SCSI/Link", "1.4a" }, true);
@@ -44,27 +45,27 @@ DaynaPort::DaynaPort(int lun) : PrimaryDevice(SCDP, lun, DAYNAPORT_READ_HEADER_S
 
 string DaynaPort::SetUp()
 {
-    AddCommand(ScsiCommand::GET_MESSAGE_6, [this]
+    AddCommand(GET_MESSAGE_6, [this]
         {
             GetMessage6();
         });
-    AddCommand(ScsiCommand::SEND_MESSAGE_6, [this]
+    AddCommand(SEND_MESSAGE_6, [this]
         {
             SendMessage6();
         });
-    AddCommand(ScsiCommand::RETRIEVE_STATS, [this]
+    AddCommand(RETRIEVE_STATS, [this]
         {
             RetrieveStats();
         });
-    AddCommand(ScsiCommand::SET_IFACE_MODE, [this]
+    AddCommand(SET_IFACE_MODE, [this]
         {
             SetInterfaceMode();
         });
-    AddCommand(ScsiCommand::SET_MCAST_ADDR, [this]
+    AddCommand(SET_MCAST_ADDR, [this]
         {
             SetMcastAddr();
         });
-    AddCommand(ScsiCommand::ENABLE_INTERFACE, [this]
+    AddCommand(ENABLE_INTERFACE, [this]
         {
             EnableInterface();
         });
@@ -196,7 +197,7 @@ int DaynaPort::GetMessage(data_in_t buf)
 //---------------------------------------------------------------------------
 int DaynaPort::WriteData(cdb_t cdb, data_out_t buf, int l)
 {
-    assert(static_cast<ScsiCommand>(cdb[0]) == ScsiCommand::SEND_MESSAGE_6);
+    assert(static_cast<ScsiCommand>(cdb[0]) == SEND_MESSAGE_6);
 
     int data_length = 0;
     if (const int data_format = cdb[5]; data_format == 0x00) {

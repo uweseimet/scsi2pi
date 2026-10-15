@@ -40,5 +40,5 @@ TEST(TargetBusTest, TargetSendHandShake)
     EXPECT_CALL(bus, SetDAT);
     EXPECT_CALL(bus, WaitNanoSeconds);
     EXPECT_CALL(bus, WaitHandShake);
-    EXPECT_EQ(0, bus.TargetSendHandShake(buf));
+    EXPECT_EQ(0, bus.TargetSendHandShake(buf, -1));
 }

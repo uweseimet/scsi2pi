@@ -26,6 +26,7 @@ using namespace spdlog;
 using namespace file_util;
 using namespace memory_util;
 using namespace s2p_util;
+using enum ScsiCommand;
 
 Tape::Tape(int l) : StorageDevice(SCTP, l, true, false, { 512, 1024, 2048, 4096, 8192 })
 {
@@ -38,63 +39,63 @@ Tape::Tape(int l) : StorageDevice(SCTP, l, true, false, { 512, 1024, 2048, 4096,
 
 string Tape::SetUp()
 {
-    AddCommand(ScsiCommand::READ_6, [this]
+    AddCommand(READ_6, [this]
         {
             Read(false);
         });
-    AddCommand(ScsiCommand::READ_16, [this]
+    AddCommand(READ_16, [this]
         {
             Read(true);
         });
-    AddCommand(ScsiCommand::WRITE_6, [this]
+    AddCommand(WRITE_6, [this]
         {
             Write(false);
         });
-    AddCommand(ScsiCommand::WRITE_16, [this]
+    AddCommand(WRITE_16, [this]
         {
             Write(true);
         });
-    AddCommand(ScsiCommand::ERASE_6, [this]
+    AddCommand(ERASE_6, [this]
         {
             Erase6();
         });
-    AddCommand(ScsiCommand::READ_BLOCK_LIMITS, [this]
+    AddCommand(READ_BLOCK_LIMITS, [this]
         {
             ReadBlockLimits();
         });
-    AddCommand(ScsiCommand::REZERO_REWIND, [this]
+    AddCommand(REZERO_REWIND, [this]
         {
             CheckReady();
             ResetPositions();
             StatusPhase();
         });
-    AddCommand(ScsiCommand::SPACE_6, [this]
+    AddCommand(SPACE_6, [this]
         {
             Space6();
         });
-    AddCommand(ScsiCommand::WRITE_FILEMARKS_6, [this]
+    AddCommand(WRITE_FILEMARKS_6, [this]
         {
             WriteFilemarks(false);
         });
-    AddCommand(ScsiCommand::WRITE_FILEMARKS_16, [this]
+    AddCommand(WRITE_FILEMARKS_16, [this]
         {
             WriteFilemarks(true);
         });
-    AddCommand(ScsiCommand::LOCATE_10, [this]
+    AddCommand(LOCATE_10, [this]
         {
             Locate(false);
             StatusPhase();
         });
-    AddCommand(ScsiCommand::LOCATE_16, [this]
+    AddCommand(LOCATE_16, [this]
         {
             Locate(true);
             StatusPhase();
         });
-    AddCommand(ScsiCommand::READ_POSITION, [this]
+    AddCommand(READ_POSITION, [this]
         {
             ReadPosition();
         });
-    AddCommand(ScsiCommand::FORMAT, [this]
+    AddCommand(FORMAT, [this]
         {
             FormatMedium();
         });

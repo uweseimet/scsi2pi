@@ -18,6 +18,7 @@ using namespace chrono;
 using namespace s2p_util;
 using namespace scsi_util;
 using namespace initiator_util;
+using enum ScsiCommand;
 
 int InitiatorExecutor::Execute(span<uint8_t> cdb, span<uint8_t> buffer, int length, int timeout, bool enable_log,
     bool report_error)
@@ -312,7 +313,7 @@ optional<SenseData> InitiatorExecutor::GetSenseData()
 {
     array<uint8_t, 252> buf = { };
     array<uint8_t, 6> cdb = { };
-    cdb[0] = to_underlying(ScsiCommand::REQUEST_SENSE);
+    cdb[0] = to_underlying(REQUEST_SENSE);
     cdb[4] = static_cast<uint8_t>(buf.size());
 
     if (Execute(cdb, buf, static_cast<int>(buf.size()), 1, true)) {

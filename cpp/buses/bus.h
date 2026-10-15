@@ -51,7 +51,7 @@ public:
 
     virtual int TargetCommandHandShake(data_in_t);
     virtual int TargetReceiveHandShake(data_in_t);
-    virtual int TargetSendHandShake(data_out_t, int = SEND_NO_DELAY);
+    virtual int TargetSendHandShake(data_out_t, int);
     virtual uint8_t InitiatorMsgInHandShake();
     virtual int InitiatorReceiveHandShake(data_in_t);
     virtual int InitiatorSendHandShake(data_out_t);

@@ -10,6 +10,8 @@
 #include "buses/bus_factory.h"
 #include "initiator/initiator_util.h"
 
+using enum ScsiCommand;
+
 string S2pExecExecutor::Init([[maybe_unused]] const string &device)
 {
 #ifdef BUILD_SCSG
@@ -89,7 +91,7 @@ optional<SenseData> S2pExecExecutor::GetSenseData() const
     if (is_sg) {
         array<uint8_t, 14> sense_data;
         array<uint8_t, 6> cdb = { };
-        cdb[0] = to_underlying(ScsiCommand::REQUEST_SENSE);
+        cdb[0] = to_underlying(REQUEST_SENSE);
         cdb[4] = static_cast<uint8_t>(sense_data.size());
 
         sg_adapter->SendCommand(cdb, sense_data, static_cast<int>(sense_data.size()), 1);

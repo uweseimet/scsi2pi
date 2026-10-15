@@ -18,6 +18,7 @@ using namespace filesystem;
 using namespace google::protobuf;
 using namespace google::protobuf::util;
 using namespace s2p_util;
+using enum ScsiCommand;
 
 string S2pProtoExecutor::Execute(const string &filename, ProtobufFormat input_format, PbResult &result)
 {
@@ -60,7 +61,7 @@ string S2pProtoExecutor::Execute(const string &filename, ProtobufFormat input_fo
     }
 
     array<uint8_t, 10> cdb = { };
-    cdb[0] = to_underlying(ScsiCommand::EXECUTE_OPERATION);
+    cdb[0] = to_underlying(EXECUTE_OPERATION);
     cdb[1] = to_underlying(input_format);
     cdb[7] = static_cast<uint8_t>(length >> 8);
     cdb[8] = static_cast<uint8_t>(length);
@@ -69,7 +70,7 @@ string S2pProtoExecutor::Execute(const string &filename, ProtobufFormat input_fo
         return "Can't execute operation";
     }
 
-    cdb[0] = to_underlying(ScsiCommand::RECEIVE_OPERATION_RESULTS);
+    cdb[0] = to_underlying(RECEIVE_OPERATION_RESULTS);
     cdb[7] = static_cast<uint8_t>(buffer.size() >> 8);
     cdb[8] = static_cast<uint8_t>(buffer.size());
 

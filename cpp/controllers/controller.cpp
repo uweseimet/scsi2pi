@@ -21,6 +21,7 @@
 using namespace spdlog;
 using namespace s2p_util;
 using namespace scsi_util;
+using enum ScsiCommand;
 
 void Controller::Reset()
 {
@@ -168,7 +169,7 @@ void Controller::Command()
 
         // Ensure correct sense data if the previous command was rejected by the controller and not by the device
         if (deferred_sense_key != NO_SENSE
-            && static_cast<ScsiCommand>(GetCdb()[0]) == ScsiCommand::REQUEST_SENSE) {
+            && static_cast<ScsiCommand>(GetCdb()[0]) == REQUEST_SENSE) {
             ProvideSenseData();
             return;
         }
@@ -189,13 +190,15 @@ void Controller::Execute()
 
     auto device = GetDeviceForLun(GetEffectiveLun());
     if (!device) {
-        if (opcode != ScsiCommand::INQUIRY && opcode != ScsiCommand::REQUEST_SENSE) {
+        if (opcode != INQUIRY && opcode != REQUEST_SENSE) {
             Error(ILLEGAL_REQUEST, LOGICAL_UNIT_NOT_SUPPORTED);
             return;
         }
 
         device = GetDeviceForLun(0);
-        assert(device);
+        if (!device) {
+            throw ScsiException(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
+        }
     }
 
     // A reservation conflict is a pure status
@@ -205,7 +208,7 @@ void Controller::Execute()
     }
 
     // Discard pending sense data from the previous command if the current command is not REQUEST SENSE
-    if (opcode != ScsiCommand::REQUEST_SENSE) {
+    if (opcode != REQUEST_SENSE) {
         SetStatus(GOOD);
         device->ResetStatus();
     }
