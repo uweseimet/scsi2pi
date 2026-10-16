@@ -491,11 +491,13 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
         return true;
     }
 
-    string filename = f;
-
-    if (!filename.starts_with('/')) {
+    string filename;
+    if (path(f).is_relative()) {
         // If the path is not absolute, assume the file is in the image folder
-        filename = GetImageFolder() + "/" + filename;
+        filename = GetImageFolder() + "/" + f;
+    }
+    else {
+        filename = f;
     }
 
     if (!filename.starts_with(GetImageFolder()) && !filename.starts_with("/home/") && !filename.starts_with("/dev/s")
