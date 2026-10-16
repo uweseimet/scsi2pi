@@ -26,6 +26,19 @@ using namespace s2p_interface_util;
 using namespace s2p_util;
 using enum LocalizationKey;
 
+namespace
+{
+optional<path> RelativeToFolder(const path &p, const path &folder)
+{
+    path relative = p.lexically_relative(folder);
+    if (relative.empty() || *relative.begin() == "..") {
+        return nullopt;
+    }
+
+    return relative;
+}
+}
+
 bool CommandExecutor::ProcessDeviceCmd(const CommandContext &context, const PbDeviceDefinition &pb_device, bool dryRun)
 {
     const string msg = PrintCommand(context.GetCommand(), pb_device);
@@ -248,7 +261,8 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
 #endif
 
 #ifdef BUILD_STORAGE_DEVICE
-    if (const auto storage_device = dynamic_pointer_cast<StorageDevice>(device); storage_device) {
+    const auto storage_device = dynamic_pointer_cast<StorageDevice>(device);
+    if (storage_device) {
         const string filename = GetParam(pb_device, "file");
 
         // If no filename was provided the medium is considered not inserted
@@ -293,8 +307,8 @@ bool CommandExecutor::Attach(const CommandContext &context, const PbDeviceDefini
     }
 
 #ifdef BUILD_STORAGE_DEVICE
-    if (!device->IsRemoved() && device->SupportsFile()) {
-        static_pointer_cast<StorageDevice>(device)->ReserveFile();
+    if (storage_device && !storage_device->IsRemoved()) {
+        storage_device->ReserveFile();
     }
 #endif
 
@@ -309,21 +323,20 @@ bool CommandExecutor::Insert([[maybe_unused]] const CommandContext &context,
     [[maybe_unused]] const PbDeviceDefinition &pb_device,
     const shared_ptr<PrimaryDevice> &device, [[maybe_unused]] bool dryRun) const
 {
-    if (!device->SupportsFile()) {
-        return false;
+#ifdef BUILD_STORAGE_DEVICE
+    auto *storage_device = dynamic_cast<StorageDevice*>(device.get());
+    if (!storage_device) {
+        return context.ReturnLocalizedError(ERROR_OPERATION_DENIED_REMOVABLE, PbOperation_Name(INSERT),
+            GetTypeString(*device));
     }
 
-#ifdef BUILD_STORAGE_DEVICE
-    if (!device->IsRemoved()) {
+    if (!storage_device->IsRemoved()) {
         return context.ReturnLocalizedError(ERROR_EJECT_REQUIRED);
     }
 
     if (!pb_device.vendor().empty() || !pb_device.product().empty() || !pb_device.revision().empty()) {
         return context.ReturnLocalizedError(ERROR_DEVICE_NAME_UPDATE);
     }
-
-    // It has been ensured above that this cast cannot fail
-    auto storage_device = static_pointer_cast<StorageDevice>(device);
 
     string filename = GetParam(pb_device, "file");
     if (filename.empty()) {
@@ -343,7 +356,7 @@ bool CommandExecutor::Insert([[maybe_unused]] const CommandContext &context,
         "Insert "s + (pb_device.protected_() ? "protected " : "") + "file '" + filename + "' requested into "
         + GetIdentifier(*storage_device));
 
-    if (!SetBlockSize(context, storage_device, pb_device.block_size())) {
+    if (!SetBlockSize(context, device, pb_device.block_size())) {
         return false;
     }
 
@@ -358,10 +371,13 @@ bool CommandExecutor::Insert([[maybe_unused]] const CommandContext &context,
     storage_device->SetMediumChanged(true);
     storage_device->SetProtected(pb_device.protected_());
 
-    SetUpDeviceProperties(storage_device);
-#endif
+    SetUpDeviceProperties(device);
 
     return true;
+#else
+    return context.ReturnLocalizedError(ERROR_OPERATION_DENIED_REMOVABLE, PbOperation_Name(INSERT),
+        GetTypeString(*device));
+#endif
 }
 
 bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &device, bool dryRun) const
@@ -418,12 +434,11 @@ void CommandExecutor::SetUpDeviceProperties(shared_ptr<PrimaryDevice> device)
             PropertyHandler::GetInstance().AddProperty(identifier + "block_size",
                 to_string(storage_device->GetConfiguredBlockSize()));
         }
-        string filename = storage_device->GetFilename();
+
+        const path filename = path(storage_device->GetFilename()).lexically_normal();
         if (!filename.empty()) {
-            if (filename.starts_with(GetImageFolder())) {
-                filename = filename.substr(GetImageFolder().length() + 1);
-            }
-            PropertyHandler::GetInstance().AddProperty(identifier + "params", filename);
+            PropertyHandler::GetInstance().AddProperty(identifier + "params",
+                RelativeToFolder(filename, path(GetImageFolder()).lexically_normal()).value_or(filename).string());
             return;
         }
     }
@@ -491,29 +506,28 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
         return true;
     }
 
-    string filename = f;
+    const path image_folder = path(GetImageFolder()).lexically_normal();
 
-    if (!filename.starts_with('/')) {
-        // If the path is not absolute, assume the file is in the image folder
-        filename = GetImageFolder() + "/" + filename;
-    }
+    const path filename = (image_folder / f).lexically_normal();
 
-    if (!filename.starts_with(GetImageFolder()) && !filename.starts_with("/home/") && !filename.starts_with("/dev/s")
-        && !filename.starts_with(temp_directory_path().string())) { // NOSONAR Using temp_directory_path() here is safe
+    error_code error;
+    const path temp_folder = temp_directory_path(error).lexically_normal(); // NOSONAR Using temp_directory_path() is safe here
+
+    if (const bool is_allowed = RelativeToFolder(filename, image_folder) || RelativeToFolder(filename, "/home")
+        || (filename.parent_path() == "/dev" && filename.filename().string().starts_with('s'))
+        || (!error && RelativeToFolder(filename, temp_folder)); !is_allowed) {
         return context.ReturnLocalizedError(ERROR_FILE_OPEN, f);
     }
 
-    if (error_code error; !exists(path(filename), error)) {
-        return context.ReturnLocalizedError(ERROR_FILE_OPEN, filename);
+    if (!exists(filename, error) || is_directory(filename, error)) {
+        return context.ReturnLocalizedError(ERROR_FILE_OPEN, filename.string());
     }
 
-    // Check for reserved file
-    if (const auto [id, lun] = StorageDevice::GetIdsForReservedFile(filename); id != -1) {
-        return context.ReturnLocalizedError(ERROR_IMAGE_IN_USE, filename,
-            fmt::format("{}:{}", id, lun));
+    if (const auto [id, lun] = StorageDevice::GetIdsForReservedFile(filename.string()); id != -1) {
+        return context.ReturnLocalizedError(ERROR_IMAGE_IN_USE, filename.string(), fmt::format("{}:{}", id, lun));
     }
 
-    device.SetFilename(filename);
+    device.SetFilename(filename.string());
 
     try {
         device.Open();
@@ -521,7 +535,7 @@ bool CommandExecutor::ValidateImageFile(const CommandContext &context, StorageDe
     catch (const IoException &e) {
         s2p_logger.error(e.what());
 
-        return context.ReturnLocalizedError(ERROR_FILE_OPEN, filename);
+        return context.ReturnLocalizedError(ERROR_FILE_OPEN, filename.string());
     }
 
     return true;
