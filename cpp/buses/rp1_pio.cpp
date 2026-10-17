@@ -165,13 +165,6 @@ constexpr uint32_t SET_PIN_ACK = PIN_ACK << SET_BASE_LSB | 1U << SET_COUNT_LSB;
 
 }
 
-Rp1Pio::~Rp1Pio()
-{
-    if (fd != -1) {
-        close(fd);
-    }
-}
-
 string Rp1Pio::Init(span<volatile uint32_t> g, bool t)
 {
     gpio = g;
@@ -486,8 +479,6 @@ void Rp1Pio::Abort(uint16_t dir)
 
 #else
 
-Rp1Pio::~Rp1Pio() = default;
-
 string Rp1Pio::Init(span<volatile uint32_t>, bool) // NOSONAR Cannot be const in order to be compatible with the PIO implementation
 {
     return "This build does not support the RP1 PIO";
@@ -514,3 +505,10 @@ int Rp1Pio::InitiatorReceive(data_in_t) // NOSONAR Cannot be const in order to b
 }
 
 #endif
+
+Rp1Pio::~Rp1Pio()
+{
+    if (fd != -1) {
+        close(fd);
+    }
+}
