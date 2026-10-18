@@ -206,8 +206,16 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
             length ? fmt::format(":\n{}", GetController()->FormatBytes(buf, length)) : "");
     }
 
-    const int status = ioctl(fd, SG_IO, &io_hdr) < 0 ? -1 : io_hdr.status;
-
+    const bool failed = ioctl(fd, SG_IO, &io_hdr) < 0;
+    const int status = failed ? -1 : io_hdr.status;
+    // If the SCSI status is OK, also check the host and driver status
+    if (!failed && (io_hdr.info & SG_INFO_CHECK)) {
+        const int sg_status = io_hdr.driver_status & 0x0f;
+        // 0x08 = DRIVER_SENSE is normal with CHECK CONDITION
+        if (io_hdr.host_status || (sg_status && sg_status != 0x08)) {
+            throw ScsiException(ABORTED_COMMAND, write ? WRITE_ERROR : READ_ERROR);
+        }
+    }
     format_header.clear();
 
     EvaluateStatus(status, span(buf.data(), length), sense_data, write);
