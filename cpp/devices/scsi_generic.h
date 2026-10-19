@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <scsi/sg.h>
 #include "primary_device.h"
 #include "shared/command_meta_data.h"
 
@@ -44,7 +45,7 @@ private:
 
     int ReadWriteData(span<uint8_t>);
 
-    void EvaluateStatus(int, span<uint8_t>, span<const uint8_t>, bool);
+    void Execute(const sg_io_hdr&, span<uint8_t>, span<const uint8_t>, bool);
 
     void UpdateInternalBlockSize(span<uint8_t> buf, int);
 
@@ -69,7 +70,7 @@ private:
 
     vector<uint8_t> format_header;
 
-    // The sense data returned by the SG driver, to be returned in the next REQUEST SENSE
+    // The sense data returned by the SG driver, to be returned with the next REQUEST SENSE
     array<uint8_t, 18> deferred_sense_data = { };
     bool deferred_sense_data_valid = false;
 

@@ -11,7 +11,6 @@
 #include "scsi_generic.h"
 #include <fcntl.h>
 #include <unistd.h>
-#include <scsi/sg.h>
 #include <sys/ioctl.h>
 #include "controllers/abstract_controller.h"
 #include "shared/s2p_exceptions.h"
@@ -206,19 +205,7 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
             length ? fmt::format(":\n{}", GetController()->FormatBytes(buf, length)) : "");
     }
 
-    const bool failed = ioctl(fd, SG_IO, &io_hdr) < 0;
-    const int status = failed ? -1 : io_hdr.status;
-    // If the SCSI status is OK, also check the host and driver status
-    if (!failed && (io_hdr.info & SG_INFO_CHECK)) {
-        const int sg_status = io_hdr.driver_status & 0x0f;
-        // 0x08 = DRIVER_SENSE is normal with CHECK CONDITION
-        if (io_hdr.host_status || (sg_status && sg_status != 0x08)) {
-            throw ScsiException(ABORTED_COMMAND, write ? WRITE_ERROR : READ_ERROR);
-        }
-    }
-    format_header.clear();
-
-    EvaluateStatus(status, span(buf.data(), length), sense_data, write);
+    Execute(io_hdr, span(buf.data(), length), sense_data, write);
 
     const int transferred_length = length - io_hdr.resid;
 
@@ -252,8 +239,22 @@ int ScsiGeneric::ReadWriteData(span<uint8_t> buf)
     return transferred_length;
 }
 
-void ScsiGeneric::EvaluateStatus(int status, span<uint8_t> buf, span<const uint8_t> sense_data, bool write)
+void ScsiGeneric::Execute(const sg_io_hdr &io_hdr, span<uint8_t> buf, span<const uint8_t> sense_data, bool write)
 {
+    const bool failed = ioctl(fd, SG_IO, &io_hdr) < 0;
+
+    format_header.clear();
+
+    int status = failed ? -1 : io_hdr.status;
+    // If the SCSI status is OK, also check the host and driver status
+    if (!failed && (io_hdr.info & SG_INFO_CHECK)) {
+        const int sg_status = io_hdr.driver_status & 0x0f;
+        // 0x08 = DRIVER_SENSE is normal with CHECK CONDITION
+        if (io_hdr.host_status || (sg_status && sg_status != 0x08)) {
+            throw ScsiException(ABORTED_COMMAND, write ? WRITE_ERROR : READ_ERROR);
+        }
+    }
+
     if (status == -1) {
         if (GetController()) {
             LogError("Transfer of {} byte(s) failed: {}", buf.size(), system_error(errno, generic_category()).what());
