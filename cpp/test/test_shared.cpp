@@ -203,15 +203,17 @@ void SetUpProperties(string_view properties1, string_view properties2, const pro
 {
     const auto& [fd1, filename1] = OpenTempFile();
     string filenames = filename1.string();
-    write(fd1, properties1.data(), properties1.size());
+    auto result = write(fd1, properties1.data(), properties1.size());
     close(fd1);
+    EXPECT_EQ(result, properties1.size());
 
     if (!properties2.empty()) {
         const auto& [fd2, filename2] = OpenTempFile();
         filenames += ",";
         filenames += filename2.string();
-        write(fd2, properties2.data(), properties2.size());
+        result = write(fd2, properties2.data(), properties2.size());
         close(fd2);
+        EXPECT_EQ(result, properties2.size());
     }
 
     PropertyHandler::GetInstance().Init(filenames, cmd_properties, true);
