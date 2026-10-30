@@ -72,7 +72,7 @@ TEST_F(PrinterTest, Init)
 TEST_F(PrinterTest, TestUnitReady)
 {
     EXPECT_CALL(*controller, Status);
-    Dispatch(printer, TEST_UNIT_READY);
+    Dispatch(*printer, TEST_UNIT_READY);
     EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
@@ -84,33 +84,33 @@ TEST_F(PrinterTest, Inquiry)
 TEST_F(PrinterTest, ReserveUnit)
 {
     EXPECT_CALL(*controller, Status);
-    Dispatch(printer, RESERVE_RESERVE_ELEMENT_6);
+    Dispatch(*printer, RESERVE_RESERVE_ELEMENT_6);
     EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
 TEST_F(PrinterTest, ReleaseUnit)
 {
     EXPECT_CALL(*controller, Status);
-    Dispatch(printer, RELEASE_RELEASE_ELEMENT_6);
+    Dispatch(*printer, RELEASE_RELEASE_ELEMENT_6);
     EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
 TEST_F(PrinterTest, Print)
 {
     EXPECT_CALL(*controller, DataOut).Times(AtLeast(1));
-    Dispatch(printer, PRINT);
+    Dispatch(*printer, PRINT);
 
     controller->SetCdbByte(2, 0xff);
     controller->SetCdbByte(3, 0xff);
     controller->SetCdbByte(4, 0xff);
-    Dispatch(printer, PRINT, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
+    Dispatch(*printer, PRINT, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Buffer overflow was not reported");
 }
 
 TEST_F(PrinterTest, StopPrint)
 {
     EXPECT_CALL(*controller, Status);
-    Dispatch(printer, STOP_PRINT);
+    Dispatch(*printer, STOP_PRINT);
     EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
@@ -120,13 +120,13 @@ TEST_F(PrinterTest, SynchronizeBuffer)
     params["cmd"] = "false %f";
     printer->SetParams(params);
 
-    Dispatch(printer, SYNCHRONIZE_BUFFER);
+    Dispatch(*printer, SYNCHRONIZE_BUFFER);
     EXPECT_EQ(GOOD, controller->GetStatus());
 
     controller->SetCdbByte(0, to_underlying(PRINT));
     controller->SetTransferSize(4, 4);
     printer->WriteData(controller->GetCdb(), controller->GetBuffer(), 4);
-    Dispatch(printer, SYNCHRONIZE_BUFFER, ABORTED_COMMAND, NO_ADDITIONAL_SENSE_INFORMATION);
+    Dispatch(*printer, SYNCHRONIZE_BUFFER, ABORTED_COMMAND, NO_ADDITIONAL_SENSE_INFORMATION);
 }
 
 TEST_F(PrinterTest, WriteData)

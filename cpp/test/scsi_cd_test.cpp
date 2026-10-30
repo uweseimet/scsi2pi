@@ -100,7 +100,7 @@ TEST(ScsiCdTest, ReadToc)
 
     controller->AddDevice(cd);
 
-    Dispatch(cd, READ_TOC, NOT_READY, MEDIUM_NOT_PRESENT, "Drive is not ready");
+    Dispatch(*cd, READ_TOC, NOT_READY, MEDIUM_NOT_PRESENT, "Drive is not ready");
 
     cd->SetBlockSize(2048);
     cd->SetBlockCount(1);
@@ -108,20 +108,20 @@ TEST(ScsiCdTest, ReadToc)
     cd->ValidateFile();
 
     controller->SetCdbByte(6, 2);
-    Dispatch(cd, READ_TOC, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB, "Invalid track number");
+    Dispatch(*cd, READ_TOC, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB, "Invalid track number");
 
     // Lead out track
     controller->SetCdbByte(6, 0xaa);
     EXPECT_CALL(*controller, DataIn);
-    Dispatch(cd, READ_TOC);
+    Dispatch(*cd, READ_TOC);
 
     controller->SetCdbByte(6, 0);
     EXPECT_CALL(*controller, DataIn);
-    Dispatch(cd, READ_TOC);
+    Dispatch(*cd, READ_TOC);
 
     controller->SetCdbByte(1, 0x02);
     EXPECT_CALL(*controller, DataIn);
-    Dispatch(cd, READ_TOC);
+    Dispatch(*cd, READ_TOC);
 }
 
 TEST(ScsiCdTest, ReadData)

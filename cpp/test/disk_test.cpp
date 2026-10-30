@@ -30,11 +30,11 @@ TEST(DiskTest, Dispatch)
     disk->SetMediumChanged(false);
     disk->SetReady(true);
     EXPECT_CALL(*controller, Status);
-    Dispatch(disk, TEST_UNIT_READY);
+    Dispatch(*disk, TEST_UNIT_READY);
     EXPECT_EQ(GOOD, controller->GetStatus());
 
     disk->SetMediumChanged(true);
-    Dispatch(disk, TEST_UNIT_READY, UNIT_ATTENTION, NOT_READY_TO_READY_TRANSITION);
+    Dispatch(*disk, TEST_UNIT_READY, UNIT_ATTENTION, NOT_READY_TO_READY_TRANSITION);
     EXPECT_FALSE(disk->IsMediumChanged());
 }
 
@@ -61,12 +61,13 @@ TEST(DiskTest, Rezero)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, REZERO_REWIND, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "REZERO must fail because drive is not ready");
+    Dispatch(*disk, REZERO_REWIND, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
+        "REZERO must fail because drive is not ready");
 
     disk->SetReady(true);
 
     EXPECT_CALL(*controller, Status);
-    Dispatch(disk, REZERO_REWIND);
+    Dispatch(*disk, REZERO_REWIND);
     EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
@@ -74,37 +75,39 @@ TEST(DiskTest, FormatUnit)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, FORMAT, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "FORMAT UNIT must fail because drive is not ready");
+    Dispatch(*disk, FORMAT, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
+        "FORMAT UNIT must fail because drive is not ready");
 
     disk->SetReady(true);
 
     EXPECT_CALL(*controller, Status);
-    Dispatch(disk, FORMAT);
+    Dispatch(*disk, FORMAT);
     EXPECT_EQ(GOOD, controller->GetStatus());
 
     // FMTDATA
     controller->SetCdbByte(1, 0x10);
-    Dispatch(disk, FORMAT, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
+    Dispatch(*disk, FORMAT, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
 
     // CmpList
     controller->SetCdbByte(1, 0x08);
-    Dispatch(disk, FORMAT, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
+    Dispatch(*disk, FORMAT, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
 
     // Defect List Format
     controller->SetCdbByte(1, 0x07);
-    Dispatch(disk, FORMAT, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
+    Dispatch(*disk, FORMAT, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
 }
 
 TEST(DiskTest, ReassignBlocks)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, REASSIGN_BLOCKS, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "REASSIGN must fail because drive is not ready");
+    Dispatch(*disk, REASSIGN_BLOCKS, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
+        "REASSIGN must fail because drive is not ready");
 
     disk->SetReady(true);
 
     EXPECT_CALL(*controller, Status);
-    Dispatch(disk, REASSIGN_BLOCKS);
+    Dispatch(*disk, REASSIGN_BLOCKS);
     EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
@@ -112,20 +115,20 @@ TEST(DiskTest, Seek6)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, SEEK_6, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "SEEK(6) must fail because drive is not ready");
+    Dispatch(*disk, SEEK_6, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "SEEK(6) must fail because drive is not ready");
 
     disk->SetReady(true);
 
     // Seeking sector 0 on a medium with 0 blocks must succeed
-    Dispatch(disk, SEEK_6);
+    Dispatch(*disk, SEEK_6);
 
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
-    Dispatch(disk, SEEK_6);
+    Dispatch(*disk, SEEK_6);
     EXPECT_EQ(GOOD, controller->GetStatus());
 
     controller->SetCdbByte(3, 1);
-    Dispatch(disk, SEEK_6, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
+    Dispatch(*disk, SEEK_6, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
         "SEEK(6) for sector 1 must fail for a medium with 1 sector");
 }
 
@@ -133,20 +136,20 @@ TEST(DiskTest, Seek10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, SEEK_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "SEEK(10) must fail because drive is not ready");
+    Dispatch(*disk, SEEK_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "SEEK(10) must fail because drive is not ready");
 
     disk->SetReady(true);
 
     // Seeking sector 0 on a medium with 0 blocks must succeed
-    Dispatch(disk, SEEK_10);
+    Dispatch(*disk, SEEK_10);
 
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
-    Dispatch(disk, SEEK_10);
+    Dispatch(*disk, SEEK_10);
     EXPECT_EQ(GOOD, controller->GetStatus());
 
     controller->SetCdbByte(5, 1);
-    Dispatch(disk, SEEK_10, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
+    Dispatch(*disk, SEEK_10, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
         "SEEK(10) for sector 1 must fail for a medium with 1 sector");
 }
 
@@ -154,22 +157,22 @@ TEST(DiskTest, ReadCapacity10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, READ_CAPACITY_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
+    Dispatch(*disk, READ_CAPACITY_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
         "READ CAPACITY(10) must fail because drive is not ready");
 
     disk->SetReady(true);
 
-    Dispatch(disk, READ_CAPACITY_10, ILLEGAL_REQUEST, MEDIUM_NOT_PRESENT,
+    Dispatch(*disk, READ_CAPACITY_10, ILLEGAL_REQUEST, MEDIUM_NOT_PRESENT,
         "READ CAPACITY(10) must fail because the medium has no capacity");
 
     disk->SetBlockCount(0x12345678);
-    Dispatch(disk, READ_CAPACITY_10);
+    Dispatch(*disk, READ_CAPACITY_10);
     auto &buf = controller->GetBuffer();
     EXPECT_EQ(0x1234, GetInt16(buf, 0));
     EXPECT_EQ(0x5677, GetInt16(buf, 2));
 
     disk->SetBlockCount(0x1234567887654321);
-    Dispatch(disk, READ_CAPACITY_10);
+    Dispatch(*disk, READ_CAPACITY_10);
     buf = controller->GetBuffer();
     EXPECT_EQ(0xffff, GetInt16(buf, 0));
     EXPECT_EQ(0xffff, GetInt16(buf, 2));
@@ -179,25 +182,25 @@ TEST(DiskTest, ReadCapacity16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, READ_CAPACITY_READ_LONG_16, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
+    Dispatch(*disk, READ_CAPACITY_READ_LONG_16, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Neither READ CAPACITY(16) nor READ LONG(16)");
 
     // Service action: READ CAPACITY(16), not READ LONG(16)
     controller->SetCdbByte(1, 0x10);
-    Dispatch(disk, READ_CAPACITY_READ_LONG_16, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
+    Dispatch(*disk, READ_CAPACITY_READ_LONG_16, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
         "READ CAPACITY(16) must fail because drive is not ready");
 
     // Service action: READ CAPACITY(16), not READ LONG(16)
     controller->SetCdbByte(1, 0x10);
     disk->SetReady(true);
-    Dispatch(disk, READ_CAPACITY_READ_LONG_16, ILLEGAL_REQUEST, MEDIUM_NOT_PRESENT,
+    Dispatch(*disk, READ_CAPACITY_READ_LONG_16, ILLEGAL_REQUEST, MEDIUM_NOT_PRESENT,
         "READ CAPACITY(16) must fail because the medium has no capacity");
 
     // Service action: READ CAPACITY(16), not READ LONG(16)
     controller->SetCdbByte(1, 0x10);
     disk->SetBlockCount(0x1234567887654321);
     disk->SetBlockSize(1024);
-    Dispatch(disk, READ_CAPACITY_READ_LONG_16);
+    Dispatch(*disk, READ_CAPACITY_READ_LONG_16);
     const auto &buf = controller->GetBuffer();
     EXPECT_EQ(0x1234, GetInt16(buf, 0));
     EXPECT_EQ(0x5678, GetInt16(buf, 2));
@@ -211,7 +214,7 @@ TEST(DiskTest, ReadFormatCapacities)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, READ_FORMAT_CAPACITIES, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
+    Dispatch(*disk, READ_FORMAT_CAPACITIES, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
         "READ FORMAT CAPACITIES must fail because drive is not ready");
 
     disk->SetReady(true);
@@ -219,7 +222,7 @@ TEST(DiskTest, ReadFormatCapacities)
     disk->SetBlockSize(512);
     // Allocation length
     controller->SetCdbByte(8, 255);
-    Dispatch(disk, READ_FORMAT_CAPACITIES);
+    Dispatch(*disk, READ_FORMAT_CAPACITIES);
     auto &buf = controller->GetBuffer();
     EXPECT_EQ(40U, GetInt32(buf, 0));
     EXPECT_EQ(disk->GetBlockCount(), GetInt32(buf, 4));
@@ -237,7 +240,7 @@ TEST(DiskTest, ReadFormatCapacities)
     disk->SetReadOnly(true);
     // Allocation length
     controller->SetCdbByte(8, 255);
-    Dispatch(disk, READ_FORMAT_CAPACITIES);
+    Dispatch(*disk, READ_FORMAT_CAPACITIES);
     buf = controller->GetBuffer();
     EXPECT_EQ(8U, GetInt32(buf, 0));
     EXPECT_EQ(disk->GetBlockCount(), GetInt32(buf, 4));
@@ -249,11 +252,11 @@ TEST(DiskTest, Read6)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, READ_6, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "READ(6) must fail because drive is not ready");
+    Dispatch(*disk, READ_6, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "READ(6) must fail because drive is not ready");
 
     disk->SetReady(true);
 
-    Dispatch(disk, READ_6, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE, "READ(6) must fail for a medium with 0 blocks");
+    Dispatch(*disk, READ_6, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE, "READ(6) must fail for a medium with 0 blocks");
 
     EXPECT_EQ(0U, disk->GetNextSector());
 
@@ -264,22 +267,22 @@ TEST(DiskTest, Read6)
     // LUN bits must not affect sector number
     controller->SetCdbByte(1, 0x07 << 5);
     controller->SetCdbByte(4, 1);
-    Dispatch(disk, READ_6);
+    Dispatch(*disk, READ_6);
 
     controller->SetCdbByte(4, 2);
-    Dispatch(disk, READ_6, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE);
+    Dispatch(*disk, READ_6, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE);
 }
 
 TEST(DiskTest, Read10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, READ_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "READ(10) must fail because drive is not ready");
+    Dispatch(*disk, READ_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "READ(10) must fail because drive is not ready");
 
     disk->SetReady(true);
 
     // Reading 0 sectors from a medium with 0 blocks must succeed
-    Dispatch(disk, READ_10);
+    Dispatch(*disk, READ_10);
 
     EXPECT_EQ(0U, disk->GetNextSector());
 
@@ -288,22 +291,22 @@ TEST(DiskTest, Read10)
     disk->ValidateFile();
 
     controller->SetCdbByte(8, 1);
-    Dispatch(disk, READ_10);
+    Dispatch(*disk, READ_10);
 
     controller->SetCdbByte(8, 2);
-    Dispatch(disk, READ_10, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE);
+    Dispatch(*disk, READ_10, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE);
 }
 
 TEST(DiskTest, Read16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, READ_16, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "READ(16) must fail because drive is not ready");
+    Dispatch(*disk, READ_16, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "READ(16) must fail because drive is not ready");
 
     disk->SetReady(true);
 
     // Reading 0 sectors from a medium with 0 blocks must succeed
-    Dispatch(disk, READ_16);
+    Dispatch(*disk, READ_16);
 
     EXPECT_EQ(0U, disk->GetNextSector());
 
@@ -312,27 +315,27 @@ TEST(DiskTest, Read16)
     disk->ValidateFile();
 
     controller->SetCdbByte(13, 1);
-    Dispatch(disk, READ_16);
+    Dispatch(*disk, READ_16);
 
     controller->SetCdbByte(13, 2);
-    Dispatch(disk, READ_16, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE);
+    Dispatch(*disk, READ_16, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE);
 }
 
 TEST(DiskTest, Write6)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, WRITE_6, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "WRITE(6) must fail because drive is not ready");
+    Dispatch(*disk, WRITE_6, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "WRITE(6) must fail because drive is not ready");
 
     disk->SetReady(true);
     disk->SetProtectable(true);
     disk->SetProtected(true);
 
-    Dispatch(disk, WRITE_6, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE, "WRITE(6) must fail for a medium with 0 blocks");
+    Dispatch(*disk, WRITE_6, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE, "WRITE(6) must fail for a medium with 0 blocks");
 
     disk->SetBlockCount(1);
     controller->SetCdbByte(4, 1);
-    Dispatch(disk, WRITE_6, DATA_PROTECT, WRITE_PROTECTED, "WRITE(6) must fail because drive is write-protected");
+    Dispatch(*disk, WRITE_6, DATA_PROTECT, WRITE_PROTECTED, "WRITE(6) must fail because drive is write-protected");
 
     EXPECT_EQ(0U, disk->GetNextSector());
 
@@ -341,28 +344,29 @@ TEST(DiskTest, Write6)
 
     disk->SetProtected(false);
     controller->SetCdbByte(4, 1);
-    Dispatch(disk, WRITE_6);
+    Dispatch(*disk, WRITE_6);
     EXPECT_EQ(512, controller->GetRemainingLength());
     disk->WriteData(controller->GetCdb(), controller->GetBuffer(), 512);
 
     controller->SetCdbByte(4, 2);
-    Dispatch(disk, WRITE_6, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE);
+    Dispatch(*disk, WRITE_6, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE);
 }
 
 TEST(DiskTest, Write10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, WRITE_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "WRITE(10) must fail because drive is not ready");
+    Dispatch(*disk, WRITE_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
+        "WRITE(10) must fail because drive is not ready");
 
     disk->SetReady(true);
 
     // Writing 0 sectors to a medium with 0 blocks must succeed
-    Dispatch(disk, WRITE_10);
+    Dispatch(*disk, WRITE_10);
 
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
-    Dispatch(disk, WRITE_10);
+    Dispatch(*disk, WRITE_10);
     EXPECT_EQ(GOOD, controller->GetStatus());
 
     EXPECT_EQ(0U, disk->GetNextSector());
@@ -372,28 +376,29 @@ TEST(DiskTest, Write10)
 
     disk->SetProtected(false);
     controller->SetCdbByte(8, 1);
-    Dispatch(disk, WRITE_10);
+    Dispatch(*disk, WRITE_10);
     EXPECT_EQ(512, controller->GetRemainingLength());
     disk->WriteData(controller->GetCdb(), controller->GetBuffer(), 512);
 
     controller->SetCdbByte(8, 2);
-    Dispatch(disk, WRITE_10, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE);
+    Dispatch(*disk, WRITE_10, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE);
 }
 
 TEST(DiskTest, Write16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, WRITE_16, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "WRITE(16) must fail because drive is not ready");
+    Dispatch(*disk, WRITE_16, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
+        "WRITE(16) must fail because drive is not ready");
 
     disk->SetReady(true);
 
     // Writing 0 sectors to a medium with 0 blocks must succeed
-    Dispatch(disk, WRITE_16);
+    Dispatch(*disk, WRITE_16);
 
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
-    Dispatch(disk, WRITE_16);
+    Dispatch(*disk, WRITE_16);
     EXPECT_EQ(GOOD, controller->GetStatus());
 
     EXPECT_EQ(0U, disk->GetNextSector());
@@ -403,19 +408,20 @@ TEST(DiskTest, Write16)
 
     disk->SetProtected(false);
     controller->SetCdbByte(13, 1);
-    Dispatch(disk, WRITE_16);
+    Dispatch(*disk, WRITE_16);
     EXPECT_EQ(512, controller->GetRemainingLength());
     disk->WriteData(controller->GetCdb(), controller->GetBuffer(), 512);
 
     controller->SetCdbByte(13, 2);
-    Dispatch(disk, WRITE_16, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE);
+    Dispatch(*disk, WRITE_16, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE);
 }
 
 TEST(DiskTest, Verify10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, VERIFY_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "VERIFY(10) must fail because drive is not ready");
+    Dispatch(*disk, VERIFY_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
+        "VERIFY(10) must fail because drive is not ready");
 
     disk->SetReady(true);
 
@@ -423,13 +429,13 @@ TEST(DiskTest, Verify10)
     controller->SetCdbByte(1, 0x02);
 
     // Verifying 0 sectors for a medium with 0 blocks must succeed
-    Dispatch(disk, VERIFY_10);
+    Dispatch(*disk, VERIFY_10);
 
     // Verify 0 sectors
     disk->SetBlockCount(1);
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
-    Dispatch(disk, VERIFY_10);
+    Dispatch(*disk, VERIFY_10);
     EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
@@ -437,18 +443,19 @@ TEST(DiskTest, Verify16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, VERIFY_16, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "VERIFY(16) must fail because drive is not ready");
+    Dispatch(*disk, VERIFY_16, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
+        "VERIFY(16) must fail because drive is not ready");
 
     disk->SetReady(true);
 
     // Verifying 0 sectors for a medium with 0 blocks must succeed
-    Dispatch(disk, VERIFY_16);
+    Dispatch(*disk, VERIFY_16);
 
     // Verify 0 sectors
     disk->SetBlockCount(1);
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
-    Dispatch(disk, VERIFY_16);
+    Dispatch(*disk, VERIFY_16);
     EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
@@ -456,20 +463,21 @@ TEST(DiskTest, ReadLong10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, READ_LONG_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "READ LONG(10) must fail because drive is not ready");
+    Dispatch(*disk, READ_LONG_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
+        "READ LONG(10) must fail because drive is not ready");
 
     disk->SetReady(true);
 
-    Dispatch(disk, READ_LONG_10, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
+    Dispatch(*disk, READ_LONG_10, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
         "READ LONG(10) must fail because the capacity is exceeded");
 
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
-    Dispatch(disk, READ_LONG_10);
+    Dispatch(*disk, READ_LONG_10);
     EXPECT_EQ(GOOD, controller->GetStatus());
 
     controller->SetCdbByte(1, 1);
-    Dispatch(disk, READ_LONG_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
+    Dispatch(*disk, READ_LONG_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "READ LONG(10) must fail because the RelAdr bit is set");
 
     disk->SetFilename(CreateImageFile(*disk, 512));
@@ -477,21 +485,21 @@ TEST(DiskTest, ReadLong10)
 
     // 4 bytes
     controller->SetCdbByte(8, 0x04);
-    Dispatch(disk, READ_LONG_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
-    RequestSense(controller, disk);
+    Dispatch(*disk, READ_LONG_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
+    RequestSense(*disk);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
     EXPECT_EQ(0xfffffe04U, GetInt32(controller->GetBuffer(), 3));
 
     // 512 bytes
     controller->SetCdbByte(7, 0x02);
-    Dispatch(disk, READ_LONG_10);
+    Dispatch(*disk, READ_LONG_10);
 
     // 516 bytes
     controller->SetCdbByte(7, 0x02);
     controller->SetCdbByte(8, 0x04);
-    Dispatch(disk, READ_LONG_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
-    RequestSense(controller, disk);
+    Dispatch(*disk, READ_LONG_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
+    RequestSense(*disk);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
     EXPECT_EQ(4U, GetInt32(controller->GetBuffer(), 3));
@@ -503,21 +511,21 @@ TEST(DiskTest, ReadLong16)
 
     // Service action: READ LONG(16), not READ CAPACITY(16)
     controller->SetCdbByte(1, 0x11);
-    Dispatch(disk, READ_CAPACITY_READ_LONG_16, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
+    Dispatch(*disk, READ_CAPACITY_READ_LONG_16, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
         "READ LONG(16) must fail because drive is not ready");
 
     disk->SetReady(true);
 
     // Service action: READ LONG(16), not READ CAPACITY(16)
     controller->SetCdbByte(1, 0x11);
-    Dispatch(disk, READ_CAPACITY_READ_LONG_16, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
+    Dispatch(*disk, READ_CAPACITY_READ_LONG_16, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
         "READ LONG(16) must fail because the capacity is exceeded");
 
     disk->SetBlockCount(1);
     // Service action: READ LONG(16), not READ CAPACITY(16)
     controller->SetCdbByte(1, 0x11);
     EXPECT_CALL(*controller, Status);
-    Dispatch(disk, READ_CAPACITY_READ_LONG_16);
+    Dispatch(*disk, READ_CAPACITY_READ_LONG_16);
     EXPECT_EQ(GOOD, controller->GetStatus());
 
     disk->SetFilename(CreateImageFile(*disk, 512));
@@ -526,8 +534,8 @@ TEST(DiskTest, ReadLong16)
     // 4 bytes
     controller->SetCdbByte(1, 0x11);
     controller->SetCdbByte(13, 0x04);
-    Dispatch(disk, READ_CAPACITY_READ_LONG_16, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
-    RequestSense(controller, disk);
+    Dispatch(*disk, READ_CAPACITY_READ_LONG_16, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
+    RequestSense(*disk);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
     EXPECT_EQ(0xfffffe04U, GetInt32(controller->GetBuffer(), 3));
@@ -535,14 +543,14 @@ TEST(DiskTest, ReadLong16)
     // 512 bytes
     controller->SetCdbByte(1, 0x11);
     controller->SetCdbByte(12, 0x02);
-    Dispatch(disk, READ_CAPACITY_READ_LONG_16);
+    Dispatch(*disk, READ_CAPACITY_READ_LONG_16);
 
     // 516 bytes
     controller->SetCdbByte(1, 0x11);
     controller->SetCdbByte(12, 0x02);
     controller->SetCdbByte(13, 0x04);
-    Dispatch(disk, READ_CAPACITY_READ_LONG_16, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
-    RequestSense(controller, disk);
+    Dispatch(*disk, READ_CAPACITY_READ_LONG_16, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
+    RequestSense(*disk);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
     EXPECT_EQ(4U, GetInt32(controller->GetBuffer(), 3));
@@ -552,21 +560,21 @@ TEST(DiskTest, WriteLong10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, WRITE_LONG_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
+    Dispatch(*disk, WRITE_LONG_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
         "WRITE LONG(10) must fail because drive is not ready");
 
     disk->SetReady(true);
 
-    Dispatch(disk, WRITE_LONG_10, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
+    Dispatch(*disk, WRITE_LONG_10, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
         "WRITE LONG(10) must fail because the capacity is exceeded");
 
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
-    Dispatch(disk, WRITE_LONG_10);
+    Dispatch(*disk, WRITE_LONG_10);
     EXPECT_EQ(GOOD, controller->GetStatus());
 
     controller->SetCdbByte(1, 1);
-    Dispatch(disk, WRITE_LONG_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
+    Dispatch(*disk, WRITE_LONG_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "WRITE LONG(10) must fail because the RelAdr bit is set");
 
     disk->SetFilename(CreateImageFile(*disk, 512));
@@ -574,21 +582,21 @@ TEST(DiskTest, WriteLong10)
 
     // 4 bytes
     controller->SetCdbByte(8, 0x04);
-    Dispatch(disk, WRITE_LONG_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
-    RequestSense(controller, disk);
+    Dispatch(*disk, WRITE_LONG_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
+    RequestSense(*disk);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
     EXPECT_EQ(0xfffffe04U, GetInt32(controller->GetBuffer(), 3));
 
     // 512 bytes
     controller->SetCdbByte(7, 0x02);
-    Dispatch(disk, WRITE_LONG_10);
+    Dispatch(*disk, WRITE_LONG_10);
 
     // 516 bytes
     controller->SetCdbByte(7, 0x02);
     controller->SetCdbByte(8, 0x04);
-    Dispatch(disk, WRITE_LONG_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
-    RequestSense(controller, disk);
+    Dispatch(*disk, WRITE_LONG_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
+    RequestSense(*disk);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
     EXPECT_EQ(4U, GetInt32(controller->GetBuffer(), 3));
@@ -598,16 +606,17 @@ TEST(DiskTest, WriteLong16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, WRITE_LONG_16, NOT_READY, INITIALIZING_COMMAND_REQUIRED, "WRITE LONG(16) must fail because drive is not ready");
+    Dispatch(*disk, WRITE_LONG_16, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
+        "WRITE LONG(16) must fail because drive is not ready");
 
     disk->SetReady(true);
 
-    Dispatch(disk, WRITE_LONG_16, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
+    Dispatch(*disk, WRITE_LONG_16, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
         "WRITE LONG(16) must fail because the capacity is exceeded");
 
     disk->SetBlockCount(1);
     EXPECT_CALL(*controller, Status);
-    Dispatch(disk, WRITE_LONG_16);
+    Dispatch(*disk, WRITE_LONG_16);
     EXPECT_EQ(GOOD, controller->GetStatus());
 
     disk->SetFilename(CreateImageFile(*disk, 512));
@@ -615,21 +624,21 @@ TEST(DiskTest, WriteLong16)
 
     // 4 bytes
     controller->SetCdbByte(13, 0x04);
-    Dispatch(disk, WRITE_LONG_16, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
-    RequestSense(controller, disk);
+    Dispatch(*disk, WRITE_LONG_16, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
+    RequestSense(*disk);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
     EXPECT_EQ(0xfffffe04U, GetInt32(controller->GetBuffer(), 3));
 
     // 512 bytes
     controller->SetCdbByte(12, 0x02);
-    Dispatch(disk, WRITE_LONG_16);
+    Dispatch(*disk, WRITE_LONG_16);
 
     // 516 bytes
     controller->SetCdbByte(12, 0x02);
     controller->SetCdbByte(13, 0x04);
-    Dispatch(disk, WRITE_LONG_16, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
-    RequestSense(controller, disk);
+    Dispatch(*disk, WRITE_LONG_16, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
+    RequestSense(*disk);
     EXPECT_EQ(0x80, controller->GetBuffer()[0] & 0x80) << "VALID must be set";
     EXPECT_EQ(0x20, controller->GetBuffer()[2] & 0x20) << "ILI must be set";
     EXPECT_EQ(4U, GetInt32(controller->GetBuffer(), 3));
@@ -688,7 +697,7 @@ TEST(DiskTest, ModeSense6)
 
     // Caching page
     controller->SetCdbByte(2, 0x08);
-    Dispatch(disk, MODE_SENSE_6);
+    Dispatch(*disk, MODE_SENSE_6);
     ValidateCachingPage(*controller, 12);
 }
 
@@ -705,7 +714,7 @@ TEST(DiskTest, ModeSense10)
 
     // Caching page
     controller->SetCdbByte(2, 0x08);
-    Dispatch(disk, MODE_SENSE_10);
+    Dispatch(*disk, MODE_SENSE_10);
     ValidateCachingPage(*controller, 16);
 }
 
@@ -731,18 +740,18 @@ TEST(DiskTest, SynchronizeCache10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, SYNCHRONIZE_CACHE_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
+    Dispatch(*disk, SYNCHRONIZE_CACHE_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
         "SYNCHRONIZE CACHE(10) must fail because drive is not ready");
     disk->SetReady(true);
 
     controller->SetCdbByte(8, 1);
-    Dispatch(disk, SYNCHRONIZE_CACHE_10, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
+    Dispatch(*disk, SYNCHRONIZE_CACHE_10, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
         "SYNCHRONIZE CACHE(10) must fail because the capacity is exceeded");
 
     disk->SetBlockCount(1);
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
-    Dispatch(disk, SYNCHRONIZE_CACHE_10);
+    Dispatch(*disk, SYNCHRONIZE_CACHE_10);
     EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
@@ -750,18 +759,18 @@ TEST(DiskTest, SynchronizeCache16)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, SYNCHRONIZE_CACHE_SPACE_16, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
+    Dispatch(*disk, SYNCHRONIZE_CACHE_SPACE_16, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
         "SYNCHRONIZE CACHE(16) must fail because drive is not ready");
     disk->SetReady(true);
 
     controller->SetCdbByte(13, 1);
-    Dispatch(disk, SYNCHRONIZE_CACHE_SPACE_16, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
+    Dispatch(*disk, SYNCHRONIZE_CACHE_SPACE_16, ILLEGAL_REQUEST, LBA_OUT_OF_RANGE,
         "SYNCHRONIZE CACHE(16) must fail because the capacity is exceeded");
 
     disk->SetBlockCount(1);
     EXPECT_CALL(*disk, FlushCache);
     EXPECT_CALL(*controller, Status);
-    Dispatch(disk, SYNCHRONIZE_CACHE_SPACE_16);
+    Dispatch(*disk, SYNCHRONIZE_CACHE_SPACE_16);
     EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
@@ -769,7 +778,7 @@ TEST(DiskTest, ReadDefectData10)
 {
     auto [controller, disk] = CreateDisk();
 
-    Dispatch(disk, READ_DEFECT_DATA_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
+    Dispatch(*disk, READ_DEFECT_DATA_10, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
         "READ DEFECT DATA(10) must fail because drive is not ready");
     disk->SetReady(true);
 
@@ -777,7 +786,7 @@ TEST(DiskTest, ReadDefectData10)
     controller->SetCdbByte(2, 0x58);
     // Allocation length
     controller->SetCdbByte(8, 255);
-    Dispatch(disk, READ_DEFECT_DATA_10);
+    Dispatch(*disk, READ_DEFECT_DATA_10);
     EXPECT_EQ(0x00, controller->GetBuffer()[0]);
     EXPECT_EQ(0x18, controller->GetBuffer()[1]);
     EXPECT_EQ(0, GetInt16(controller->GetBuffer(), 2));

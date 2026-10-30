@@ -69,10 +69,10 @@ string TestShared::GetVersion()
     return fmt::format("{:02}{}{}", s2p_major_version, s2p_minor_version, s2p_revision);
 }
 
-void TestShared::RequestSense(shared_ptr<MockAbstractController> controller, shared_ptr<PrimaryDevice> device)
+void TestShared::RequestSense(PrimaryDevice &device)
 {
     // Allocation length
-    controller->SetCdbByte(4, 255);
+    dynamic_cast<MockAbstractController*>(device.GetController())->SetCdbByte(4, 255);
     Dispatch(device, REQUEST_SENSE);
 }
 
@@ -123,16 +123,15 @@ void TestShared::TestRemovableDrive(PbDeviceType type, const string &filename, c
     EXPECT_EQ(GetVersion(), r);
 }
 
-void TestShared::Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand cmd, SenseKey sense_key, Asc asc,
-    const string &msg)
+void TestShared::Dispatch(PrimaryDevice &device, ScsiCommand cmd, SenseKey sense_key, Asc asc, const string &msg)
 {
-    auto *controller = dynamic_cast<MockAbstractController*>(device->GetController());
+    auto *controller = dynamic_cast<MockAbstractController*>(device.GetController());
     if (controller) {
         controller->SetCdbByte(0, to_underlying(cmd));
     }
 
     try {
-        device->Dispatch(cmd);
+        device.Dispatch(cmd);
         if (sense_key != NO_SENSE || asc != NO_ADDITIONAL_SENSE_INFORMATION) {
             FAIL() << msg;
         }
@@ -219,12 +218,12 @@ void SetUpProperties(string_view properties1, string_view properties2, const pro
     PropertyHandler::GetInstance().Init(filenames, cmd_properties, true);
 }
 
-void RequestSense(shared_ptr<MockAbstractController> controller, shared_ptr<PrimaryDevice> device)
+void RequestSense(PrimaryDevice &device)
 {
-    TestShared::RequestSense(controller, device);
+    TestShared::RequestSense(device);
 }
 
-void Dispatch(shared_ptr<PrimaryDevice> device, ScsiCommand command, SenseKey s, Asc a, const string &msg)
+void Dispatch(PrimaryDevice &device, ScsiCommand command, SenseKey s, Asc a, const string &msg)
 {
     TestShared::Dispatch(device, command, s, a, msg);
 }

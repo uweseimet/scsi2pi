@@ -134,7 +134,7 @@ TEST(PrimaryDeviceTest, Reset)
     device->SetLocked(true);
     device->SetAttn(true);
     device->SetReset(true);
-    Dispatch(device, RESERVE_RESERVE_ELEMENT_6);
+    Dispatch(*device, RESERVE_RESERVE_ELEMENT_6);
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for initiator ID 1";
     device->Reset();
     EXPECT_FALSE(device->IsLocked());
@@ -150,7 +150,7 @@ TEST(PrimaryDeviceTest, CheckReservation)
     EXPECT_TRUE(device->CheckReservation(0)) << "Device must not be reserved for initiator ID 0";
 
     controller->ProcessOnController(0);
-    Dispatch(device, RESERVE_RESERVE_ELEMENT_6);
+    Dispatch(*device, RESERVE_RESERVE_ELEMENT_6);
     EXPECT_TRUE(device->CheckReservation(0)) << "Device must not be reserved for initiator ID 0";
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for initiator ID 1";
     EXPECT_FALSE(device->CheckReservation(-1)) << "Device must be reserved for unknown initiator";
@@ -174,19 +174,19 @@ TEST(PrimaryDeviceTest, ReserveRelease)
     auto [controller, device] = CreatePrimaryDevice();
 
     controller->ProcessOnController(0x02);
-    Dispatch(device, RESERVE_RESERVE_ELEMENT_6);
+    Dispatch(*device, RESERVE_RESERVE_ELEMENT_6);
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for initiator ID 1";
 
     controller->ProcessOnController(0x02);
-    Dispatch(device, RELEASE_RELEASE_ELEMENT_6);
+    Dispatch(*device, RELEASE_RELEASE_ELEMENT_6);
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved anymore for initiator ID 1";
 
     controller->ProcessOnController(0x02);
-    Dispatch(device, RESERVE_RESERVE_ELEMENT_6);
+    Dispatch(*device, RESERVE_RESERVE_ELEMENT_6);
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for unknown initiator";
 
     controller->ProcessOnController(0x02);
-    Dispatch(device, RELEASE_RELEASE_ELEMENT_6);
+    Dispatch(*device, RELEASE_RELEASE_ELEMENT_6);
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved anymore for unknown initiator";
 }
 
@@ -194,7 +194,7 @@ TEST(PrimaryDeviceTest, DiscardReservation)
 {
     auto [controller, device] = CreatePrimaryDevice();
 
-    Dispatch(device, RESERVE_RESERVE_ELEMENT_6);
+    Dispatch(*device, RESERVE_RESERVE_ELEMENT_6);
     EXPECT_FALSE(device->CheckReservation(1)) << "Device must be reserved for initiator ID 1";
     device->DiscardReservation();
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved anymore for initiator ID 1";
@@ -250,28 +250,28 @@ TEST(PrimaryDeviceTest, TestUnitReady)
     device->SetAttn(true);
     device->SetReady(false);
     EXPECT_CALL(*controller, DataIn).Times(0);
-    Dispatch(device, TEST_UNIT_READY, UNIT_ATTENTION, POWER_ON_OR_RESET);
+    Dispatch(*device, TEST_UNIT_READY, UNIT_ATTENTION, POWER_ON_OR_RESET);
 
     device->SetReset(false);
     EXPECT_CALL(*controller, DataIn).Times(0);
-    Dispatch(device, TEST_UNIT_READY, UNIT_ATTENTION, NOT_READY_TO_READY_TRANSITION);
+    Dispatch(*device, TEST_UNIT_READY, UNIT_ATTENTION, NOT_READY_TO_READY_TRANSITION);
 
     device->SetReset(true);
     device->SetAttn(false);
     EXPECT_CALL(*controller, DataIn).Times(0);
-    Dispatch(device, TEST_UNIT_READY, UNIT_ATTENTION, POWER_ON_OR_RESET);
+    Dispatch(*device, TEST_UNIT_READY, UNIT_ATTENTION, POWER_ON_OR_RESET);
     device->SetReset(false);
     device->SetAttn(true);
     EXPECT_CALL(*controller, DataIn).Times(0);
-    Dispatch(device, TEST_UNIT_READY, UNIT_ATTENTION, NOT_READY_TO_READY_TRANSITION);
+    Dispatch(*device, TEST_UNIT_READY, UNIT_ATTENTION, NOT_READY_TO_READY_TRANSITION);
 
     device->SetAttn(false);
     EXPECT_CALL(*controller, DataIn).Times(0);
-    Dispatch(device, TEST_UNIT_READY, NOT_READY, INITIALIZING_COMMAND_REQUIRED);
+    Dispatch(*device, TEST_UNIT_READY, NOT_READY, INITIALIZING_COMMAND_REQUIRED);
 
     device->SetReady(true);
     EXPECT_CALL(*controller, Status);
-    Dispatch(device, TEST_UNIT_READY);
+    Dispatch(*device, TEST_UNIT_READY);
     EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
@@ -285,7 +285,7 @@ TEST(PrimaryDeviceTest, Inquiry)
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn);
     ON_CALL(*controller, GetEffectiveLun()).WillByDefault(Return(1));
-    Dispatch(device, INQUIRY);
+    Dispatch(*device, INQUIRY);
     EXPECT_EQ(0x7f, controller->GetBuffer()[0]) << "Invalid LUN was not reported";
     ON_CALL(*controller, GetEffectiveLun()).WillByDefault(Return(0));
 
@@ -294,7 +294,7 @@ TEST(PrimaryDeviceTest, Inquiry)
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn);
     device->SetScsiLevel(ScsiLevel::SPC_3);
-    Dispatch(device, INQUIRY);
+    Dispatch(*device, INQUIRY);
     EXPECT_EQ(DeviceType::DIRECT_ACCESS, static_cast<DeviceType>(controller->GetBuffer()[0]));
     EXPECT_EQ(0x00, controller->GetBuffer()[1]) << "Device was not reported as non-removable";
     EXPECT_EQ(ScsiLevel::SPC_3, static_cast<ScsiLevel>(controller->GetBuffer()[2])) << "Wrong SCSI level";
@@ -306,7 +306,7 @@ TEST(PrimaryDeviceTest, Inquiry)
     d->SetRemovable(true);
     EXPECT_CALL(*controller, DataIn);
     device->SetScsiLevel(ScsiLevel::SCSI_1_CCS);
-    Dispatch(device, INQUIRY);
+    Dispatch(*device, INQUIRY);
     EXPECT_EQ(DeviceType::DIRECT_ACCESS, static_cast<DeviceType>(controller->GetBuffer()[0]));
     EXPECT_EQ(0x80, controller->GetBuffer()[1]) << "Device was not reported as removable";
     EXPECT_EQ(ScsiLevel::SCSI_1_CCS, static_cast<ScsiLevel>(controller->GetBuffer()[2])) << "Wrong SCSI level";
@@ -315,13 +315,13 @@ TEST(PrimaryDeviceTest, Inquiry)
 
     controller->SetCdbByte(1, 0x01);
     EXPECT_CALL(*controller, DataIn).Times(0);
-    Dispatch(device, INQUIRY, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
+    Dispatch(*device, INQUIRY, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "EVPD bit is not supported");
 
     controller->SetCdbByte(1, 0);
     controller->SetCdbByte(2, 0x01);
     EXPECT_CALL(*controller, DataIn).Times(0);
-    Dispatch(device, INQUIRY, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
+    Dispatch(*device, INQUIRY, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "PAGE CODE field is not supported");
 
     controller->SetCdbByte(1, 0);
@@ -329,7 +329,7 @@ TEST(PrimaryDeviceTest, Inquiry)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 1);
     EXPECT_CALL(*controller, DataIn);
-    Dispatch(device, INQUIRY);
+    Dispatch(*device, INQUIRY);
     EXPECT_EQ(0x1f, controller->GetBuffer()[4]) << "Wrong additional data size";
     EXPECT_EQ(1, controller->GetCurrentLength()) << "Wrong ALLOCATION LENGTH handling";
 }
@@ -344,10 +344,10 @@ TEST(PrimaryDeviceTest, RequestSense)
     controller->SetCdbByte(1, 0x01);
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
-    Dispatch(device, REQUEST_SENSE, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
+    Dispatch(*device, REQUEST_SENSE, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
 
     device->SetReady(true);
-    RequestSense(controller, device);
+    RequestSense(*device);
     EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x00, data[2]);
@@ -356,7 +356,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(0x000000U, GetInt32(data, 14));
 
     device->SetFilemark();
-    RequestSense(controller, device);
+    RequestSense(*device);
     EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x80, data[2]);
@@ -366,7 +366,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(0x000000U, GetInt32(data, 14));
 
     device->SetEom(END_OF_PARTITION_MEDIUM_DETECTED);
-    RequestSense(controller, device);
+    RequestSense(*device);
     EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x40, data[2]) << "EOM must be set";
@@ -376,7 +376,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(0x000000U, GetInt32(data, 14));
 
     device->SetEom(BEGINNING_OF_PARTITION_MEDIUM_DETECTED);
-    RequestSense(controller, device);
+    RequestSense(*device);
     EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x40, data[2]) << "EOM must be set";
@@ -386,7 +386,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(0x000000U, GetInt32(data, 14));
 
     device->SetIli();
-    RequestSense(controller, device);
+    RequestSense(*device);
     EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_EQ(0x70, data[0]);
     EXPECT_EQ(0x20, data[2]) << "ILI must be set";
@@ -394,7 +394,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     EXPECT_EQ(0x000000U, GetInt32(data, 14));
 
     device->SetInformation(0x12345678);
-    RequestSense(controller, device);
+    RequestSense(*device);
     EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_EQ(0xf0, data[0]);
     EXPECT_EQ(0x00, data[2]);
@@ -404,7 +404,7 @@ TEST(PrimaryDeviceTest, RequestSense)
     device->SetScsiLevel(ScsiLevel::SCSI_1_CCS);
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 0);
-    Dispatch(device, REQUEST_SENSE);
+    Dispatch(*device, REQUEST_SENSE);
     EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_EQ(0x00, data[0]);
 }
@@ -416,15 +416,15 @@ TEST(PrimaryDeviceTest, SendDiagnostic)
     device->SetReady(true);
 
     EXPECT_CALL(*controller, Status);
-    Dispatch(device, SEND_DIAGNOSTIC);
+    Dispatch(*device, SEND_DIAGNOSTIC);
     EXPECT_EQ(GOOD, controller->GetStatus());
 
     controller->SetCdbByte(3, 1);
-    Dispatch(device, SEND_DIAGNOSTIC, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
+    Dispatch(*device, SEND_DIAGNOSTIC, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "SEND DIAGNOSTIC must fail because parameter list is not supported");
     controller->SetCdbByte(3, 0);
     controller->SetCdbByte(4, 1);
-    Dispatch(device, SEND_DIAGNOSTIC, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
+    Dispatch(*device, SEND_DIAGNOSTIC, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "SEND DIAGNOSTIC must fail because parameter list is not supported");
 }
 
@@ -450,7 +450,7 @@ TEST(PrimaryDeviceTest, ReportLuns)
     controller->SetCdbByte(9, 255);
 
     EXPECT_CALL(*controller, DataIn);
-    Dispatch(device1, REPORT_LUNS);
+    Dispatch(*device1, REPORT_LUNS);
     span<uint8_t> buffer = controller->GetBuffer();
     EXPECT_EQ(0, GetInt16(buffer, 0)) << "Wrong data length";
     EXPECT_EQ(16, GetInt16(buffer, 2)) << "Wrong data length";
@@ -464,14 +464,16 @@ TEST(PrimaryDeviceTest, ReportLuns)
     EXPECT_EQ(LUN2, GetInt16(buffer, 22)) << "Wrong LUN2 number";
 
     controller->SetCdbByte(2, 0x01);
-    Dispatch(device1, REPORT_LUNS, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
+    Dispatch(*device1, REPORT_LUNS, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Only SELECT REPORT mode 0 is supported");
 }
 
 TEST(PrimaryDeviceTest, Dispatch)
 {
-    Dispatch(make_shared<MockPrimaryDevice>(0), static_cast<ScsiCommand>(0x1f), ILLEGAL_REQUEST,
-        INVALID_COMMAND_OPERATION_CODE, "Unsupported SCSI command");
+    MockPrimaryDevice device(0);
+
+    Dispatch(device, static_cast<ScsiCommand>(0x1f), ILLEGAL_REQUEST, INVALID_COMMAND_OPERATION_CODE,
+        "Unsupported SCSI command");
 }
 
 TEST(PrimaryDeviceTest, Init)

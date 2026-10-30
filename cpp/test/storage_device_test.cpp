@@ -83,19 +83,19 @@ TEST(StorageDeviceTest, PreventAllowMediumRemoval)
 {
     auto [controller, device] = CreateStorageDevice();
 
-    Dispatch(device, PREVENT_ALLOW_MEDIUM_REMOVAL, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
+    Dispatch(*device, PREVENT_ALLOW_MEDIUM_REMOVAL, NOT_READY, INITIALIZING_COMMAND_REQUIRED,
         "PREVENT/ALLOW MEDIUM REMOVAL must fail because device is not ready");
 
     device->SetReady(true);
 
     EXPECT_CALL(*controller, Status);
-    Dispatch(device, PREVENT_ALLOW_MEDIUM_REMOVAL);
+    Dispatch(*device, PREVENT_ALLOW_MEDIUM_REMOVAL);
     EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_FALSE(device->IsLocked());
 
     controller->SetCdbByte(4, 1);
     EXPECT_CALL(*controller, Status);
-    Dispatch(device, PREVENT_ALLOW_MEDIUM_REMOVAL);
+    Dispatch(*device, PREVENT_ALLOW_MEDIUM_REMOVAL);
     EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_TRUE(device->IsLocked());
 }
@@ -108,7 +108,7 @@ TEST(StorageDeviceTest, StartStopUnit)
 
     // Stop/Unload
     EXPECT_CALL(*controller, Status);
-    Dispatch(device, START_STOP);
+    Dispatch(*device, START_STOP);
     EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_TRUE(device->IsStopped());
 
@@ -117,34 +117,34 @@ TEST(StorageDeviceTest, StartStopUnit)
     device->SetReady(true);
     device->SetLocked(false);
     EXPECT_CALL(*controller, Status);
-    Dispatch(device, START_STOP);
+    Dispatch(*device, START_STOP);
     EXPECT_EQ(GOOD, controller->GetStatus());
 
     // Stop/Load
     controller->SetCdbByte(4, 0x02);
     device->SetReady(true);
     device->SetReady(false);
-    Dispatch(device, START_STOP, ILLEGAL_REQUEST, MEDIA_LOAD_OR_EJECT_FAILED,
+    Dispatch(*device, START_STOP, ILLEGAL_REQUEST, MEDIA_LOAD_OR_EJECT_FAILED,
         "START/STOP must fail because device is not ready");
 
     // Stop/Load
     controller->SetCdbByte(4, 0x02);
     device->SetReady(true);
     device->SetLocked(true);
-    Dispatch(device, START_STOP, ILLEGAL_REQUEST, MEDIA_LOAD_OR_EJECT_FAILED,
+    Dispatch(*device, START_STOP, ILLEGAL_REQUEST, MEDIA_LOAD_OR_EJECT_FAILED,
         "LOAD/EJECT must fail because device is locked");
 
     // Start/Unload
     controller->SetCdbByte(4, 0x01);
     EXPECT_CALL(*controller, Status);
-    Dispatch(device, START_STOP);
+    Dispatch(*device, START_STOP);
     EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_FALSE(device->IsStopped());
 
     // Start/Load
     controller->SetCdbByte(4, 0x03);
     EXPECT_CALL(*controller, Status);
-    Dispatch(device, START_STOP);
+    Dispatch(*device, START_STOP);
     EXPECT_EQ(GOOD, controller->GetStatus());
 
     // Start/Load with previous medium
@@ -154,7 +154,7 @@ TEST(StorageDeviceTest, StartStopUnit)
     EXPECT_TRUE(device->GetLastFilename().empty());
     EXPECT_CALL(*controller, Status);
     // Eject existing medium
-    Dispatch(device, START_STOP);
+    Dispatch(*device, START_STOP);
     EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_TRUE(device->GetFilename().empty());
     EXPECT_EQ("filename", device->GetLastFilename());
@@ -163,12 +163,12 @@ TEST(StorageDeviceTest, StartStopUnit)
     device->ReserveFile();
     controller->SetCdbByte(4, 0x03);
     EXPECT_CALL(*controller, Status).Times(0);
-    Dispatch(device, START_STOP, ILLEGAL_REQUEST, MEDIA_LOAD_OR_EJECT_FAILED,
+    Dispatch(*device, START_STOP, ILLEGAL_REQUEST, MEDIA_LOAD_OR_EJECT_FAILED,
         "Filename is already reserved");
     device->UnreserveFile();
     controller->SetCdbByte(4, 0x03);
     EXPECT_CALL(*controller, Status);
-    Dispatch(device, START_STOP);
+    Dispatch(*device, START_STOP);
     EXPECT_EQ(GOOD, controller->GetStatus());
     EXPECT_EQ("filename", device->GetFilename());
 }
@@ -444,7 +444,7 @@ TEST(StorageDeviceTest, ModeSense6)
     // ALLOCATION LENGTH, block descriptor only
     controller->SetCdbByte(4, 12);
     device->SetBlockSize(1024);
-    Dispatch(device, MODE_SENSE_6);
+    Dispatch(*device, MODE_SENSE_6);
     EXPECT_EQ(11, controller->GetBuffer()[0]) << "Wrong mode data length";
     EXPECT_EQ(8, controller->GetBuffer()[3]) << "Wrong block descriptor length";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
@@ -454,7 +454,7 @@ TEST(StorageDeviceTest, ModeSense6)
     // ALLOCATION LENGTH, block descriptor only
     controller->SetCdbByte(4, 12);
     device->SetBlockSize(1024);
-    Dispatch(device, MODE_SENSE_6);
+    Dispatch(*device, MODE_SENSE_6);
     EXPECT_EQ(11, controller->GetBuffer()[0]) << "Wrong mode data length";
     EXPECT_EQ(8, controller->GetBuffer()[3]) << "Wrong block descriptor length";
     EXPECT_EQ(0x0000ffffU, GetInt32(controller->GetBuffer(), 8)) << "Wrong changeable block size";
@@ -464,7 +464,7 @@ TEST(StorageDeviceTest, ModeSense6)
     controller->SetCdbByte(4, 255);
     device->SetBlockCount(0x00000001);
     device->SetBlockSize(1024);
-    Dispatch(device, MODE_SENSE_6);
+    Dispatch(*device, MODE_SENSE_6);
     EXPECT_EQ(47, controller->GetBuffer()[0]) << "Wrong mode data length";
     EXPECT_EQ(8, controller->GetBuffer()[3]) << "Wrong block descriptor length";
     EXPECT_EQ(0x00000001U, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
@@ -474,7 +474,7 @@ TEST(StorageDeviceTest, ModeSense6)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     device->SetBlockCount(0xffffffff);
-    Dispatch(device, MODE_SENSE_6);
+    Dispatch(*device, MODE_SENSE_6);
     EXPECT_EQ(47, controller->GetBuffer()[0]) << "Wrong mode data length";
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
@@ -483,7 +483,7 @@ TEST(StorageDeviceTest, ModeSense6)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     device->SetBlockCount(0x100000000);
-    Dispatch(device, MODE_SENSE_6);
+    Dispatch(*device, MODE_SENSE_6);
     EXPECT_EQ(47, controller->GetBuffer()[0]) << "Wrong mode data length";
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 4)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block size";
@@ -494,7 +494,7 @@ TEST(StorageDeviceTest, ModeSense6)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     // No block descriptor
-    Dispatch(device, MODE_SENSE_6);
+    Dispatch(*device, MODE_SENSE_6);
     EXPECT_EQ(0x00, controller->GetBuffer()[2]) << "Wrong device-specific parameter";
 
     device->SetReadOnly(false);
@@ -505,7 +505,7 @@ TEST(StorageDeviceTest, ModeSense6)
     controller->SetCdbByte(2, 0x3f);
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
-    Dispatch(device, MODE_SENSE_6);
+    Dispatch(*device, MODE_SENSE_6);
     const auto &buf = controller->GetBuffer();
     EXPECT_EQ(0x80, buf[2]) << "Wrong device-specific parameter";
 
@@ -515,8 +515,7 @@ TEST(StorageDeviceTest, ModeSense6)
     controller->SetCdbByte(3, 0x01);
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
-    Dispatch(device, MODE_SENSE_6, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
-        "Subpages are not supported");
+    Dispatch(*device, MODE_SENSE_6, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB, "Subpages are not supported");
 }
 
 TEST(StorageDeviceTest, ModeSense10)
@@ -530,7 +529,7 @@ TEST(StorageDeviceTest, ModeSense10)
     // ALLOCATION LENGTH, block descriptor only
     controller->SetCdbByte(4, 12);
     device->SetBlockSize(1024);
-    Dispatch(device, MODE_SENSE_10);
+    Dispatch(*device, MODE_SENSE_10);
     EXPECT_EQ(14, GetInt16(controller->GetBuffer(), 0)) << "Wrong mode data length";
     EXPECT_EQ(8, controller->GetBuffer()[7]) << "Wrong block descriptor length";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
@@ -540,7 +539,7 @@ TEST(StorageDeviceTest, ModeSense10)
     // ALLOCATION LENGTH, block descriptor only
     controller->SetCdbByte(4, 8);
     device->SetBlockSize(1024);
-    Dispatch(device, MODE_SENSE_10);
+    Dispatch(*device, MODE_SENSE_10);
     EXPECT_EQ(14, GetInt16(controller->GetBuffer(), 0)) << "Wrong mode data length";
     EXPECT_EQ(8, controller->GetBuffer()[7]) << "Wrong block descriptor length";
     EXPECT_EQ(0x0000ffffU, GetInt32(controller->GetBuffer(), 12)) << "Wrong changeable block size";
@@ -550,7 +549,7 @@ TEST(StorageDeviceTest, ModeSense10)
     controller->SetCdbByte(2, 0x3f);
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 255);
-    Dispatch(device, MODE_SENSE_10);
+    Dispatch(*device, MODE_SENSE_10);
     EXPECT_EQ(50, GetInt16(controller->GetBuffer(), 0)) << "Wrong mode data length";
     EXPECT_EQ(8, controller->GetBuffer()[7]) << "Wrong block descriptor length";
     EXPECT_EQ(0x00000001U, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
@@ -560,7 +559,7 @@ TEST(StorageDeviceTest, ModeSense10)
     controller->SetCdbByte(2, 0x3f);
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 255);
-    Dispatch(device, MODE_SENSE_10);
+    Dispatch(*device, MODE_SENSE_10);
     EXPECT_EQ(50, GetInt16(controller->GetBuffer(), 0)) << "Wrong mode data length";
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
@@ -569,7 +568,7 @@ TEST(StorageDeviceTest, ModeSense10)
     controller->SetCdbByte(2, 0x3f);
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 255);
-    Dispatch(device, MODE_SENSE_10);
+    Dispatch(*device, MODE_SENSE_10);
     EXPECT_EQ(50, GetInt16(controller->GetBuffer(), 0)) << "Wrong mode data length";
     EXPECT_EQ(0xffffffff, GetInt32(controller->GetBuffer(), 8)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 12)) << "Wrong block size";
@@ -579,7 +578,7 @@ TEST(StorageDeviceTest, ModeSense10)
     controller->SetCdbByte(2, 0x3f);
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 255);
-    Dispatch(device, MODE_SENSE_10);
+    Dispatch(*device, MODE_SENSE_10);
     EXPECT_EQ(58, GetInt16(controller->GetBuffer(), 0)) << "Wrong mode data length";
     EXPECT_EQ(0x100000000U, GetInt64(controller->GetBuffer(), 8)) << "Wrong block count";
     EXPECT_EQ(1024U, GetInt32(controller->GetBuffer(), 20)) << "Wrong block size";
@@ -590,7 +589,7 @@ TEST(StorageDeviceTest, ModeSense10)
     controller->SetCdbByte(2, 0x3f);
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 255);
-    Dispatch(device, MODE_SENSE_10);
+    Dispatch(*device, MODE_SENSE_10);
     auto &buf = controller->GetBuffer();
     EXPECT_EQ(0x00, controller->GetBuffer()[3]) << "Wrong device-specific parameter";
 
@@ -602,7 +601,7 @@ TEST(StorageDeviceTest, ModeSense10)
     device->SetReadOnly(false);
     device->SetProtectable(true);
     device->SetProtected(true);
-    Dispatch(device, MODE_SENSE_10);
+    Dispatch(*device, MODE_SENSE_10);
     buf = controller->GetBuffer();
     EXPECT_EQ(0x80, buf[3]) << "Wrong device-specific parameter";
 
@@ -612,8 +611,7 @@ TEST(StorageDeviceTest, ModeSense10)
     controller->SetCdbByte(3, 0x01);
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 255);
-    Dispatch(device, MODE_SENSE_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
-        "Subpages are not supported");
+    Dispatch(*device, MODE_SENSE_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB, "Subpages are not supported");
 }
 
 TEST(StorageDeviceTest, GetStatistics)

@@ -15,7 +15,6 @@
 #include "controllers/controller_factory.h"
 #include "devices/device_factory.h"
 #include "devices/disk.h"
-#include "devices/scsi_generic.h"
 #include "protobuf/s2p_interface_util.h"
 #include "shared/property_handler.h"
 #include "shared/s2p_exceptions.h"

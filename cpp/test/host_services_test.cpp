@@ -64,7 +64,7 @@ TEST_F(HostServicesTest, GetIdentifier)
 TEST_F(HostServicesTest, TestUnitReady)
 {
     EXPECT_CALL(*controller, Status);
-    Dispatch(services, TEST_UNIT_READY);
+    Dispatch(*services, TEST_UNIT_READY);
     EXPECT_EQ(GOOD, controller->GetStatus());
 }
 
@@ -77,71 +77,71 @@ TEST_F(HostServicesTest, StartStopUnit)
 {
     // STOP
     EXPECT_CALL(*controller, Status);
-    Dispatch(services, START_STOP);
+    Dispatch(*services, START_STOP);
     EXPECT_EQ(GOOD, controller->GetStatus());
 
     // LOAD
     controller->SetCdbByte(4, 0x02);
     EXPECT_CALL(*controller, Status);
-    Dispatch(services, START_STOP);
+    Dispatch(*services, START_STOP);
     EXPECT_EQ(GOOD, controller->GetStatus());
 
     // UNLOAD
     controller->SetCdbByte(4, 0x03);
     EXPECT_CALL(*controller, Status);
-    Dispatch(services, START_STOP);
+    Dispatch(*services, START_STOP);
     EXPECT_EQ(GOOD, controller->GetStatus());
 
     // START
     controller->SetCdbByte(4, 0x01);
-    Dispatch(services, START_STOP, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
+    Dispatch(*services, START_STOP, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
 }
 
 TEST_F(HostServicesTest, ExecuteOperation)
 {
     controller->SetCdbByte(1, 0b000);
-    Dispatch(services, EXECUTE_OPERATION, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
+    Dispatch(*services, EXECUTE_OPERATION, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Illegal format");
 
     controller->SetCdbByte(1, 0b111);
-    Dispatch(services, EXECUTE_OPERATION, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
+    Dispatch(*services, EXECUTE_OPERATION, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Illegal format");
 
     controller->SetCdbByte(1, 0b001);
-    Dispatch(services, EXECUTE_OPERATION, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
+    Dispatch(*services, EXECUTE_OPERATION, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Illegal length");
 
     controller->SetCdbByte(8, 1);
     controller->SetCdbByte(1, 0b001);
-    Dispatch(services, EXECUTE_OPERATION);
+    Dispatch(*services, EXECUTE_OPERATION);
 }
 
 TEST_F(HostServicesTest, ReceiveOperationResults)
 {
     controller->SetCdbByte(1, 0b000);
-    Dispatch(services, RECEIVE_OPERATION_RESULTS, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
+    Dispatch(*services, RECEIVE_OPERATION_RESULTS, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Illegal format");
 
     controller->SetCdbByte(1, 0b111);
-    Dispatch(services, RECEIVE_OPERATION_RESULTS, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
+    Dispatch(*services, RECEIVE_OPERATION_RESULTS, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Illegal format");
 
     controller->SetCdbByte(1, 0b11000);
-    Dispatch(services, RECEIVE_OPERATION_RESULTS, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
+    Dispatch(*services, RECEIVE_OPERATION_RESULTS, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Illegal format");
 
     controller->SetCdbByte(1, 0b010);
-    Dispatch(services, RECEIVE_OPERATION_RESULTS, ILLEGAL_REQUEST,
+    Dispatch(*services, RECEIVE_OPERATION_RESULTS, ILLEGAL_REQUEST,
         DATA_CURRENTLY_UNAVAILABLE, "No matching initiator ID");
 }
 
 TEST_F(HostServicesTest, ModeSense6)
 {
-    Dispatch(services, MODE_SENSE_6, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
+    Dispatch(*services, MODE_SENSE_6, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Unsupported mode page was returned");
 
     controller->SetCdbByte(2, 0x20);
-    Dispatch(services, MODE_SENSE_6, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
+    Dispatch(*services, MODE_SENSE_6, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Block descriptors are not supported");
 
     controller->SetCdbByte(1, 0x08);
@@ -149,7 +149,7 @@ TEST_F(HostServicesTest, ModeSense6)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
     EXPECT_CALL(*controller, DataIn);
-    Dispatch(services, MODE_SENSE_6);
+    Dispatch(*services, MODE_SENSE_6);
     auto &buffer = controller->GetBuffer();
     // Major version 1
     EXPECT_EQ(0x01, buffer[6]);
@@ -165,24 +165,24 @@ TEST_F(HostServicesTest, ModeSense6)
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 2);
     EXPECT_CALL(*controller, DataIn);
-    Dispatch(services, MODE_SENSE_6);
+    Dispatch(*services, MODE_SENSE_6);
     buffer = controller->GetBuffer();
     EXPECT_EQ(0x01, buffer[0]);
 
     controller->SetCdbByte(1, 0x08);
     controller->SetCdbByte(2, 0x20);
     controller->SetCdbByte(3, 0x01);
-    Dispatch(services, MODE_SENSE_6, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
+    Dispatch(*services, MODE_SENSE_6, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Subpages are not supported");
 }
 
 TEST_F(HostServicesTest, ModeSense10)
 {
-    Dispatch(services, MODE_SENSE_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
+    Dispatch(*services, MODE_SENSE_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Unsupported mode page was returned");
 
     controller->SetCdbByte(2, 0x20);
-    Dispatch(services, MODE_SENSE_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
+    Dispatch(*services, MODE_SENSE_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Block descriptors are not supported");
 
     controller->SetCdbByte(1, 0x08);
@@ -190,7 +190,7 @@ TEST_F(HostServicesTest, ModeSense10)
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 255);
     EXPECT_CALL(*controller, DataIn);
-    Dispatch(services, MODE_SENSE_10);
+    Dispatch(*services, MODE_SENSE_10);
     auto &buffer = controller->GetBuffer();
     // Major version 1
     EXPECT_EQ(0x01, buffer[10]);
@@ -206,14 +206,14 @@ TEST_F(HostServicesTest, ModeSense10)
     // ALLOCATION LENGTH
     controller->SetCdbByte(8, 4);
     EXPECT_CALL(*controller, DataIn);
-    Dispatch(services, MODE_SENSE_10);
+    Dispatch(*services, MODE_SENSE_10);
     buffer = controller->GetBuffer();
     EXPECT_EQ(0x02, buffer[1]);
 
     controller->SetCdbByte(1, 0x08);
     controller->SetCdbByte(2, 0x20);
     controller->SetCdbByte(3, 0x01);
-    Dispatch(services, MODE_SENSE_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
+    Dispatch(*services, MODE_SENSE_10, ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB,
         "Subpages are not supported");
 }
 
@@ -254,5 +254,5 @@ TEST_F(HostServicesTest, SetDispatcher)
     auto dispatcher = make_shared<CommandDispatcher>(executor, controller_factory, *default_logger());
 
     dynamic_pointer_cast<HostServices>(services)->SetDispatcher(dispatcher);
-    Dispatch(services, TEST_UNIT_READY);
+    Dispatch(*services, TEST_UNIT_READY);
 }

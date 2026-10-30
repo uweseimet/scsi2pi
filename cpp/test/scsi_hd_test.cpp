@@ -159,7 +159,7 @@ TEST(ScsiHdTest, ModeSense6)
     // ALLOCATION LENGTH
     controller.SetCdbByte(4, 255);
     hd->SetBlockSize(1024);
-    Dispatch(hd, MODE_SENSE_6);
+    Dispatch(*hd, MODE_SENSE_6);
     ValidateFormatPage(controller, 12);
 
     // Rigid disk drive page
@@ -167,7 +167,7 @@ TEST(ScsiHdTest, ModeSense6)
     // ALLOCATION LENGTH
     controller.SetCdbByte(4, 255);
     hd->SetBlockCount(0x12345678);
-    Dispatch(hd, MODE_SENSE_6);
+    Dispatch(*hd, MODE_SENSE_6);
     ValidateDrivePage(controller, 12);
 }
 
@@ -192,7 +192,7 @@ TEST(ScsiHdTest, ModeSense10)
     // ALLOCATION LENGTH
     controller.SetCdbByte(8, 255);
     hd->SetBlockSize(1024);
-    Dispatch(hd, MODE_SENSE_10);
+    Dispatch(*hd, MODE_SENSE_10);
     ValidateFormatPage(controller, 16);
 
     // Rigid disk drive page
@@ -200,7 +200,7 @@ TEST(ScsiHdTest, ModeSense10)
     // ALLOCATION LENGTH
     controller.SetCdbByte(8, 255);
     hd->SetBlockCount(0x12345678);
-    Dispatch(hd, MODE_SENSE_10);
+    Dispatch(*hd, MODE_SENSE_10);
     ValidateDrivePage(controller, 16);
 }
 
