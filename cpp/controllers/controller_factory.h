@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -10,7 +10,7 @@
 
 #include <memory>
 #include <unordered_map>
-#include <unordered_set>
+#include <vector>
 #include <spdlog/spdlog.h>
 #include "shared/s2p_defs.h"
 #include "shared/s2p_formatter.h"
@@ -30,7 +30,7 @@ public:
     bool DeleteAllControllers();
     ShutdownMode ProcessOnController(uint8_t) const;
 
-    unordered_set<shared_ptr<PrimaryDevice>> GetAllDevices() const;
+    vector<shared_ptr<PrimaryDevice>> GetAllDevices() const;
     shared_ptr<PrimaryDevice> GetDeviceForIdAndLun(int, int) const;
 
     string SetScriptFile(const string&);

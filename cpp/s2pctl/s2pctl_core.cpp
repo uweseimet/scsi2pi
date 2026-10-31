@@ -339,9 +339,11 @@ int S2pCtl::ParseArguments(const span<char*> args) // NOSONAR Acceptable complex
             break;
 
         case 't':
-            device->set_type(ParseDeviceType(optarg));
-            if (device->type() == UNDEFINED) {
-                cerr << "Error: Invalid device type '" << optarg << "'\n";
+            try {
+                device->set_type(ParseDeviceType(optarg));
+            }
+            catch (const ParserException &e) {
+                cerr << "Error: " << e.what() << '\n';
                 return EXIT_FAILURE;
             }
             break;

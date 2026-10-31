@@ -343,14 +343,9 @@ void S2p::SetExcludedTypes() const
     const string excluded_types = property_handler.ConsumeProperty(PropertyHandler::EXCLUDED_TYPES);
     const auto &components = Split(excluded_types, ',');
 
-    unordered_set < PbDeviceType > parsed_types;
-    for (const auto &t : components) {
-        const auto type = ParseDeviceType(Trim(t));
-        if (type == UNDEFINED) {
-            throw ParserException("Invalid excluded device types list: '{}'", excluded_types);
-        }
-
-        parsed_types.insert(type);
+    unordered_set<PbDeviceType> parsed_types;
+    for (const auto &type : components) {
+        parsed_types.insert(ParseDeviceType(type));
     }
 
     if (!parsed_types.empty()) {
@@ -368,11 +363,7 @@ void S2p::MapExtensions() const
             throw ParserException("Invalid extension mapping: '{}'", key);
         }
 
-        PbDeviceType type = UNDEFINED;
-        if (!PbDeviceType_Parse(ToUpper(components[1]), &type) || type == UNDEFINED) {
-            throw ParserException("Invalid device type in extension mapping: '{}'", components[1]);
-        }
-
+        const auto type = ParseDeviceType(components[1]);
         for (const string &extension : Split(value, ',')) {
             if (!DeviceFactory::GetInstance().UpdateExtensionMapping(extension, type)) {
                 throw ParserException("Duplicate mapping for extension '{}'", extension);

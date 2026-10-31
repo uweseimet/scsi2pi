@@ -138,10 +138,10 @@ public:
     MOCK_METHOD(void, Status, (), (override));
 
     using Controller::Controller;
-    MockController(shared_ptr<Bus> b, int t) : Controller(*b, t, nullptr, formatter)
+    MockController(Bus &b, int t) : Controller(b, t, nullptr, formatter)
     {
     }
-    explicit MockController(shared_ptr<Bus> b) : Controller(*b, 0, nullptr, formatter)
+    explicit MockController(Bus &b) : Controller(b, 0, nullptr, formatter)
     {
     }
     ~MockController() override = default;

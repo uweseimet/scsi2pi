@@ -81,13 +81,13 @@ ShutdownMode ControllerFactory::ProcessOnController(uint8_t ids) const
     return ShutdownMode::NONE;
 }
 
-unordered_set<shared_ptr<PrimaryDevice>> ControllerFactory::GetAllDevices() const
+vector<shared_ptr<PrimaryDevice>> ControllerFactory::GetAllDevices() const
 {
-    unordered_set<shared_ptr<PrimaryDevice>> devices;
+    vector<shared_ptr<PrimaryDevice>> devices;
 
     for (const auto& [_, controller] : controllers) {
         const auto &d = controller->GetDevices();
-        devices.insert(d.cbegin(), d.cend());
+        devices.insert(devices.end(), d.cbegin(), d.cend());
     }
 
     return devices;

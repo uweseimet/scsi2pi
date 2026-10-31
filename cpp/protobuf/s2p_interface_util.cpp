@@ -14,17 +14,19 @@ using namespace s2p_util;
 
 PbDeviceType s2p_interface_util::ParseDeviceType(string_view value)
 {
-    if (PbDeviceType type; PbDeviceType_Parse(ToUpper(value), &type)) {
-        return type;
-    }
+    PbDeviceType type = UNDEFINED;
 
-    // Handle convenience one-letter device types (shortcuts)
-    if (value.size() == 1) {
+    // Also handle convenience one-letter device types (shortcuts)
+    if (!PbDeviceType_Parse(ToUpper(Trim(value)), &type) && value.size() == 1) {
         const auto &it = DEVICE_TYPES.find(tolower(value[0]));
-        return it != DEVICE_TYPES.end() ? it->second : UNDEFINED;
+        type = it != DEVICE_TYPES.end() ? it->second : UNDEFINED;
     }
 
-    return UNDEFINED;
+    if (type == UNDEFINED) {
+        throw ParserException("Invalid device type: '{}'", value);
+    }
+
+    return type;
 }
 
 PbCachingMode s2p_interface_util::ParseCachingMode(const string &value)
@@ -32,7 +34,7 @@ PbCachingMode s2p_interface_util::ParseCachingMode(const string &value)
     string v = value;
     ranges::replace(v, '-', '_');
 
-    if (PbCachingMode mode; PbCachingMode_Parse(ToUpper(v), &mode)) {
+    if (PbCachingMode mode; PbCachingMode_Parse(ToUpper(Trim(v)), &mode)) {
         return mode;
     }
 

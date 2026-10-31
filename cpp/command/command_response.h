@@ -10,6 +10,7 @@
 
 #include <string>
 #include <unordered_set>
+#include <vector>
 #include <spdlog/spdlog.h>
 #include "generated/s2p_interface.pb.h"
 
@@ -25,16 +26,16 @@ namespace command_response
 bool GetImageFile(PbImageFile&, const string&);
 void GetImageFilesInfo(PbImageFilesInfo&, const string&, const string&, logger&);
 void GetReservedIds(PbReservedIdsInfo&, const unordered_set<int>&);
-void GetDevices(const unordered_set<shared_ptr<PrimaryDevice>>&, PbServerInfo&);
-void GetDevicesInfo(const unordered_set<shared_ptr<PrimaryDevice>>&, PbResult&, const PbCommand&);
+void GetDevices(const vector<shared_ptr<PrimaryDevice>>&, PbServerInfo&);
+void GetDevicesInfo(const vector<shared_ptr<PrimaryDevice>>&, PbResult&, const PbCommand&);
 void GetDeviceTypesInfo(PbDeviceTypesInfo&, const unordered_set<PbDeviceType>&);
 void GetVersionInfo(PbVersionInfo&);
-void GetServerInfo(PbServerInfo&, const PbCommand&, const unordered_set<shared_ptr<PrimaryDevice>>&,
+void GetServerInfo(PbServerInfo&, const PbCommand&, const vector<shared_ptr<PrimaryDevice>>&,
     const unordered_set<int>&, const unordered_set<PbDeviceType>&, logger&);
 void GetNetworkInterfacesInfo(PbNetworkInterfacesInfo&);
 void GetMappingInfo(PbMappingInfo&);
 void GetLogLevelInfo(PbLogLevelInfo&);
-void GetStatisticsInfo(PbStatisticsInfo&, const unordered_set<shared_ptr<PrimaryDevice>>&);
+void GetStatisticsInfo(PbStatisticsInfo&, const vector<shared_ptr<PrimaryDevice>>&);
 void GetPropertiesInfo(PbPropertiesInfo&);
 void GetOperationInfo(PbOperationInfo&);
 

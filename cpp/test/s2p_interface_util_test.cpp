@@ -2,7 +2,7 @@
 //
 // SCSI2Pi, SCSI device emulator and SCSI tools for the Raspberry Pi
 //
-// Copyright (C) 2022-2025 Uwe Seimet
+// Copyright (C) 2022-2026 Uwe Seimet
 //
 //---------------------------------------------------------------------------
 
@@ -31,6 +31,7 @@ TEST(S2pInterfaceUtilTest, ParseDeviceType)
     EXPECT_EQ(SCHS, ParseDeviceType("schs"));
     EXPECT_EQ(SCTP, ParseDeviceType("sctp"));
     EXPECT_EQ(SCSG, ParseDeviceType("scsg"));
+    EXPECT_EQ(SCSG, ParseDeviceType(" scsg "));
 
     EXPECT_EQ(SCCD, ParseDeviceType("c"));
     EXPECT_EQ(SCDP, ParseDeviceType("d"));
@@ -41,9 +42,9 @@ TEST(S2pInterfaceUtilTest, ParseDeviceType)
     EXPECT_EQ(SCHS, ParseDeviceType("s"));
     EXPECT_EQ(SCTP, ParseDeviceType("t"));
 
-    EXPECT_EQ(UNDEFINED, ParseDeviceType(""));
-    EXPECT_EQ(UNDEFINED, ParseDeviceType("sc"));
-    EXPECT_EQ(UNDEFINED, ParseDeviceType("xyz"));
+    EXPECT_THROW(ParseDeviceType(""), ParserException);
+    EXPECT_THROW(ParseDeviceType("sc"), ParserException);
+    EXPECT_THROW(ParseDeviceType("xyz"), ParserException);
 }
 
 TEST(S2pInterfaceUtilTest, ParseCachingMode)

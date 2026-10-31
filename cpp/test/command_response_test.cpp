@@ -111,8 +111,7 @@ TEST(CommandResponseTest, GetDevicesInfo)
     EXPECT_TRUE(result1.status());
     EXPECT_TRUE(result1.devices_info().devices().empty());
 
-    auto device1 = make_shared<HostServices>(LUN1);
-    EXPECT_TRUE(controller_factory.AttachToController(bus, ID, device1));
+    EXPECT_TRUE(controller_factory.AttachToController(bus, ID, make_shared<HostServices>(LUN1)));
 
     GetDevicesInfo(controller_factory.GetAllDevices(), result1, command);
     EXPECT_TRUE(result1.status());
@@ -122,8 +121,7 @@ TEST(CommandResponseTest, GetDevicesInfo)
     EXPECT_EQ(ID, devices1[0].id());
     EXPECT_EQ(LUN1, devices1[0].unit());
 
-    auto device2 = make_shared<MockScsiHd>(LUN2, false);
-    EXPECT_TRUE(controller_factory.AttachToController(bus, ID, device2));
+    EXPECT_TRUE(controller_factory.AttachToController(bus, ID, make_shared<MockScsiHd>(LUN2, false)));
 
     PbResult result2;
     GetDevicesInfo(controller_factory.GetAllDevices(), result2, command);
@@ -159,7 +157,7 @@ TEST(CommandResponseTest, GetDeviceTypesInfo)
 
 TEST(CommandResponseTest, GetServerInfo)
 {
-    const unordered_set<shared_ptr<PrimaryDevice>> devices;
+    const vector<shared_ptr<PrimaryDevice>> devices;
     const unordered_set<int> ids = { 1, 3 };
 
     PbCommand command;
@@ -228,14 +226,14 @@ TEST(CommandResponseTest, GetMappingInfo)
 
 TEST(CommandResponseTest, GetStatisticsInfo)
 {
-    unordered_set<shared_ptr<PrimaryDevice>> devices;
+    vector<shared_ptr<PrimaryDevice>> devices;
 
     PbStatisticsInfo info;
-    devices.insert(make_shared<MockPrimaryDevice>(0));
+    devices.emplace_back(make_shared<MockPrimaryDevice>(0));
     GetStatisticsInfo(info, devices);
     EXPECT_EQ(0, info.statistics().size());
 
-    devices.insert(make_shared<MockScsiHd>(0, false));
+    devices.emplace_back(make_shared<MockScsiHd>(0, false));
     GetStatisticsInfo(info, devices);
     const auto &statistics = info.statistics();
     EXPECT_EQ(2, statistics.size());

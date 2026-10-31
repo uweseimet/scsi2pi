@@ -97,12 +97,12 @@ void AbstractController::CopyToBuffer(span<const uint8_t> buf)
     ranges::copy(buf, buffer.begin());
 }
 
-unordered_set<shared_ptr<PrimaryDevice>> AbstractController::GetDevices() const
+vector<shared_ptr<PrimaryDevice>> AbstractController::GetDevices() const
 {
-    unordered_set<shared_ptr<PrimaryDevice>> devices;
+    vector<shared_ptr<PrimaryDevice>> devices;
 
     for (const auto& [_, device] : luns) {
-        devices.insert(device);
+        devices.emplace_back(device);
     }
 
     return devices;

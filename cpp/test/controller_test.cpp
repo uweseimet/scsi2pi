@@ -54,7 +54,7 @@ TEST(ControllerTest, GetInitiatorId)
 
 TEST(ControllerTest, BusFree)
 {
-    auto bus = make_shared<NiceMock<MockBus>>();
+    NiceMock<MockBus> bus;
     MockController controller(bus);
 
     controller.SetPhase(BusPhase::BUS_FREE, "");
@@ -86,17 +86,17 @@ TEST(ControllerTest, BusFree)
 
 TEST(ControllerTest, Selection)
 {
-    auto bus = make_shared<NiceMock<MockBus>>();
-    auto controller = make_shared<MockController>(bus, 0);
+    NiceMock<MockBus> bus;
+    MockController controller(bus);
 
-    EXPECT_CALL(*bus, SetBSY);
-    controller->Selection();
-    EXPECT_EQ(BusPhase::SELECTION, controller->GetPhase());
+    EXPECT_CALL(bus, SetBSY);
+    controller.Selection();
+    EXPECT_EQ(BusPhase::SELECTION, controller.GetPhase());
 }
 
 TEST(ControllerTest, Command)
 {
-    auto bus = make_shared<NiceMock<MockBus>>();
+    NiceMock<MockBus> bus;
     MockController controller(bus);
     auto device = make_shared<MockPrimaryDevice>(0);
 
@@ -118,7 +118,7 @@ TEST(ControllerTest, Command)
 
 TEST(ControllerTest, MsgIn)
 {
-    auto bus = make_shared<NiceMock<MockBus>>();
+    NiceMock<MockBus> bus;
     MockController controller(bus);
 
     controller.SetPhase(BusPhase::RESERVED, "");
@@ -130,7 +130,7 @@ TEST(ControllerTest, MsgIn)
 
 TEST(ControllerTest, MsgOut)
 {
-    auto bus = make_shared<NiceMock<MockBus>>();
+    NiceMock<MockBus> bus;
     MockController controller(bus);
 
     controller.SetPhase(BusPhase::RESERVED, "");
@@ -142,7 +142,7 @@ TEST(ControllerTest, MsgOut)
 
 TEST(ControllerTest, DataIn)
 {
-    auto bus = make_shared<NiceMock<MockBus>>();
+    NiceMock<MockBus> bus;
     MockController controller(bus);
 
     controller.SetPhase(BusPhase::RESERVED, "");
@@ -159,7 +159,7 @@ TEST(ControllerTest, DataIn)
 
 TEST(ControllerTest, DataOut)
 {
-    auto bus = make_shared<NiceMock<MockBus>>();
+    NiceMock<MockBus> bus;
     MockController controller(bus);
 
     controller.SetPhase(BusPhase::RESERVED, "");
@@ -176,8 +176,9 @@ TEST(ControllerTest, DataOut)
 
 TEST(ControllerTest, RequestSense)
 {
-    auto bus = make_shared<NiceMock<MockBus>>();
+    NiceMock<MockBus> bus;
     MockController controller(bus);
+
     auto device = make_shared<NiceMock<MockPrimaryDevice>>(0);
     EXPECT_EQ("", device->Init());
 

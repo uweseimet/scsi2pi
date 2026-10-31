@@ -10,7 +10,7 @@
 
 #include <memory>
 #include <span>
-#include <unordered_set>
+#include <unordered_map>
 #include <spdlog/spdlog.h>
 #include "shared/s2p_defs.h"
 #include "shared/s2p_formatter.h"
@@ -122,7 +122,7 @@ public:
         return luns.size();
     }
 
-    unordered_set<shared_ptr<PrimaryDevice>> GetDevices() const;
+    vector<shared_ptr<PrimaryDevice>> GetDevices() const;
     shared_ptr<PrimaryDevice> GetDeviceForLun(int) const;
     bool AddDevice(shared_ptr<PrimaryDevice>);
     bool RemoveDevice(PrimaryDevice&);

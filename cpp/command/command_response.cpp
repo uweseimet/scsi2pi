@@ -230,8 +230,7 @@ void AddOperationParameter(PbOperationMetaData &meta_data, const string &name, c
     }
 }
 
-set<id_set> MatchDevices(const unordered_set<shared_ptr<PrimaryDevice>> &devices, PbResult &result,
-    const PbCommand &command)
+set<id_set> MatchDevices(const vector<shared_ptr<PrimaryDevice>> &devices, PbResult &result, const PbCommand &command)
 {
     set<id_set> id_sets;
 
@@ -321,15 +320,14 @@ void command_response::GetReservedIds(PbReservedIdsInfo &reserved_ids_info, cons
     }
 }
 
-void command_response::GetDevices(const unordered_set<shared_ptr<PrimaryDevice>> &devices,
-    PbServerInfo &server_info)
+void command_response::GetDevices(const vector<shared_ptr<PrimaryDevice>> &devices, PbServerInfo &server_info)
 {
     for (const auto &device : devices) {
         GetDevice(*device, *server_info.mutable_devices_info()->add_devices());
     }
 }
 
-void command_response::GetDevicesInfo(const unordered_set<shared_ptr<PrimaryDevice>> &devices, PbResult &result,
+void command_response::GetDevicesInfo(const vector<shared_ptr<PrimaryDevice>> &devices, PbResult &result,
     const PbCommand &command)
 {
     set<id_set> id_sets;
@@ -362,7 +360,7 @@ void command_response::GetDevicesInfo(const unordered_set<shared_ptr<PrimaryDevi
 }
 
 void command_response::GetServerInfo(PbServerInfo &server_info, const PbCommand &command,
-    const unordered_set<shared_ptr<PrimaryDevice>> &devices, const unordered_set<int> &reserved_ids,
+    const vector<shared_ptr<PrimaryDevice>> &devices, const unordered_set<int> &reserved_ids,
     const unordered_set<PbDeviceType> &excluded_types, logger &logger)
 {
     const auto &command_operations = Split(GetParam(command, "operations"), ',');
@@ -453,7 +451,7 @@ void command_response::GetMappingInfo(PbMappingInfo &mapping_info)
 }
 
 void command_response::GetStatisticsInfo(PbStatisticsInfo &statistics_info,
-    const unordered_set<shared_ptr<PrimaryDevice>> &devices)
+    const vector<shared_ptr<PrimaryDevice>> &devices)
 {
     for (const auto &device : devices) {
         for (const auto &statistics : device->GetStatistics()) {
