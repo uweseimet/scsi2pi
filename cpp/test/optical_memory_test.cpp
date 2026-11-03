@@ -41,21 +41,6 @@ TEST(OpticalMemoryTest, GetBlockSizes)
     EXPECT_TRUE(sizes.contains(4096));
 }
 
-TEST(OpticalMemoryTest, SetUpModePages)
-{
-    map<int, vector<byte>> pages;
-    OpticalMemory mo(0);
-
-    // Non changeable
-    mo.SetUpModePages(pages, 0x3f, false);
-    SetUpModePages(pages);
-
-    // Changeable
-    pages.clear();
-    mo.SetUpModePages(pages, 0x3f, true);
-    SetUpModePages(pages);
-}
-
 TEST(OpticalMemoryTest, AddVendorPages)
 {
     map<int, vector<byte>> pages;

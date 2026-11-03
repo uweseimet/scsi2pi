@@ -37,8 +37,8 @@ TEST(S2pExceptionsTest, ScsiException)
     } catch (const ScsiException &e) {
         EXPECT_EQ(UNIT_ATTENTION, e.GetSenseKey());
         EXPECT_EQ(NO_ADDITIONAL_SENSE_INFORMATION, e.GetAsc());
-        EXPECT_NE(nullptr, strstr(e.what(), "Sense Key"));
-        EXPECT_NE(nullptr, strstr(e.what(), "ASC"));
+        EXPECT_TRUE(string(e.what()).contains("Sense Key"));
+        EXPECT_TRUE(string(e.what()).contains("ASC"));
     }
 
     try {
@@ -46,7 +46,7 @@ TEST(S2pExceptionsTest, ScsiException)
     } catch (const ScsiException &e) {
         EXPECT_EQ(ILLEGAL_REQUEST, e.GetSenseKey());
         EXPECT_EQ(LBA_OUT_OF_RANGE, e.GetAsc());
-        EXPECT_NE(nullptr, strstr(e.what(), "Sense Key"));
-        EXPECT_NE(nullptr, strstr(e.what(), "ASC"));
+        EXPECT_TRUE(string(e.what()).contains("Sense Key"));
+        EXPECT_TRUE(string(e.what()).contains("ASC"));
     }
 }

@@ -50,6 +50,7 @@ inline const unordered_map<int, PbDeviceType> DEVICE_TYPES = {
     { 'c', SCCD },
     { 'd', SCDP },
     { 'h', SCHD },
+    { 'g', SCSG },
     { 'l', SCLP },
     { 'm', SCMO },
     { 'r', SCRM },

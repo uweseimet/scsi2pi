@@ -18,7 +18,8 @@ using namespace s2p_test;
 
 TEST(FileUtilTest, IsReadyOnlyFile)
 {
-    EXPECT_TRUE("/tmp/xyz");
+    const auto filename = CreateTempFile(1);
+    EXPECT_FALSE(IsReadOnlyFile(filename));
 }
 
 TEST(FileUtilTest, GetExtensionLowerCase)

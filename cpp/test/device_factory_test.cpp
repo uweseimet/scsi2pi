@@ -7,14 +7,8 @@
 //---------------------------------------------------------------------------
 
 #include <gtest/gtest.h>
-#include "devices/daynaport.h"
+#include "devices/primary_device.h"
 #include "devices/device_factory.h"
-#include "devices/host_services.h"
-#include "devices/optical_memory.h"
-#include "devices/printer.h"
-#include "devices/sasi_hd.h"
-#include "devices/scsi_cd.h"
-#include "devices/scsi_hd.h"
 
 TEST(DeviceFactoryTest, CreateDevice)
 {
@@ -102,6 +96,10 @@ TEST(DeviceFactoryTest, UpdateExtensionMapping)
     mapping = factory.GetExtensionMapping();
     EXPECT_EQ(13U, mapping.size());
     EXPECT_EQ(SCCD, mapping["ext"]);
+
+    EXPECT_TRUE(factory.UpdateExtensionMapping("ext_", UNDEFINED));
+    mapping = factory.GetExtensionMapping();
+    EXPECT_EQ(13U, mapping.size());
 
     EXPECT_TRUE(factory.UpdateExtensionMapping("ext", UNDEFINED));
     mapping = factory.GetExtensionMapping();

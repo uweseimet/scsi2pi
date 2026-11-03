@@ -34,6 +34,7 @@ TEST(ScsiUtilTest, GetScsiLevel)
     EXPECT_EQ("SPC-4", GetScsiLevel(6));
     EXPECT_EQ("SPC-5", GetScsiLevel(7));
     EXPECT_EQ("SPC-6", GetScsiLevel(8));
+    EXPECT_EQ("SPC-7", GetScsiLevel(9));
 }
 
 TEST(ScsiUtilTest, GetStatusString)

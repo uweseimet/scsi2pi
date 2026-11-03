@@ -278,8 +278,6 @@ TEST(PrimaryDeviceTest, TestUnitReady)
 TEST(PrimaryDeviceTest, Inquiry)
 {
     auto [controller, device] = CreatePrimaryDevice();
-    // Required by old clang++ compilers
-    auto d = device;
 
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
@@ -303,7 +301,7 @@ TEST(PrimaryDeviceTest, Inquiry)
 
     // ALLOCATION LENGTH
     controller->SetCdbByte(4, 255);
-    d->SetRemovable(true);
+    device->SetRemovable(true);
     EXPECT_CALL(*controller, DataIn);
     device->SetScsiLevel(ScsiLevel::SCSI_1_CCS);
     Dispatch(*device, INQUIRY);

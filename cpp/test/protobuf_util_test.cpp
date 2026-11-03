@@ -21,8 +21,8 @@ TEST(ProtobufUtilTest, SerializeMessage)
 
     if (exists("/dev/null")) {
         const int fd = open("/dev/null", O_WRONLY);
-        ASSERT_NE(-1, fd);
-        SerializeMessage(fd, result);
+        EXPECT_NE(-1, fd);
+        EXPECT_NO_THROW(SerializeMessage(fd, result));
         close(fd);
     }
 
@@ -36,7 +36,7 @@ TEST(ProtobufUtilTest, DeserializeMessage)
 
     if (exists("/dev/null")) {
         const int fd = open("/dev/null", O_RDONLY);
-        ASSERT_NE(-1, fd);
+        EXPECT_NE(-1, fd);
         EXPECT_THROW(DeserializeMessage(fd, result), IoException)<< "Reading the message header must fail";
         close(fd);
     }
@@ -47,7 +47,7 @@ TEST(ProtobufUtilTest, DeserializeMessage)
     EXPECT_EQ(static_cast<ssize_t>(buf.size()), write(fd1, buf.data(), buf.size()));
     close(fd1);
     fd1 = open(filename1.string().c_str(), O_RDONLY);
-    ASSERT_NE(-1, fd1);
+    EXPECT_NE(-1, fd1);
     EXPECT_THROW(DeserializeMessage(fd1, result), IoException)<< "Invalid header was not rejected";
 
     auto [fd2, filename2] = OpenTempFile();
@@ -56,7 +56,7 @@ TEST(ProtobufUtilTest, DeserializeMessage)
     EXPECT_EQ(static_cast<ssize_t>(buf.size()), write(fd2, buf.data(), buf.size()));
     close(fd2);
     fd2 = open(filename2.string().c_str(), O_RDONLY);
-    ASSERT_NE(-1, fd2);
+    EXPECT_NE(-1, fd2);
     EXPECT_THROW(DeserializeMessage(fd2, result), IoException)<< "Invalid data were not rejected";
 }
 
@@ -66,13 +66,13 @@ TEST(ProtobufUtilTest, SerializeDeserializeMessage)
     result.set_status(true);
 
     auto [fd, filename] = OpenTempFile();
-    ASSERT_NE(-1, fd);
+    EXPECT_NE(-1, fd);
     SerializeMessage(fd, result);
     close(fd);
 
     result.set_status(false);
     fd = open(filename.string().c_str(), O_RDONLY);
-    ASSERT_NE(-1, fd);
+    EXPECT_NE(-1, fd);
     DeserializeMessage(fd, result);
     close(fd);
 
@@ -86,7 +86,7 @@ TEST(ProtobufUtilTest, ReadBytes)
 
     if (exists("/dev/null")) {
         const int fd = open("/dev/null", O_RDONLY);
-        ASSERT_NE(-1, fd);
+        EXPECT_NE(-1, fd);
         EXPECT_FALSE(ReadBytes(fd, buf1));
         EXPECT_TRUE(ReadBytes(fd, buf2));
         close(fd);
@@ -94,7 +94,7 @@ TEST(ProtobufUtilTest, ReadBytes)
 
     if (exists("/dev/zero")) {
         const int fd = open("/dev/zero", O_RDONLY);
-        ASSERT_NE(-1, fd);
+        EXPECT_NE(-1, fd);
         EXPECT_TRUE(ReadBytes(fd, buf1));
         EXPECT_TRUE(ReadBytes(fd, buf2));
         close (fd);
@@ -106,7 +106,7 @@ TEST(ProtobufUtilTest, WriteBytes)
     const vector<uint8_t> buf(4, 0xab);
 
     auto [fd, filename] = OpenTempFile();
-    ASSERT_NE(-1, fd);
+    EXPECT_NE(-1, fd);
     EXPECT_NO_THROW(WriteBytes(fd, buf));
     close(fd);
 

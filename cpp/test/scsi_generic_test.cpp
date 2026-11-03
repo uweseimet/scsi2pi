@@ -7,7 +7,6 @@
 //---------------------------------------------------------------------------
 
 #include "mocks.h"
-#include "test_shared.h"
 #include "devices/scsi_generic.h"
 #include "shared/s2p_exceptions.h"
 
@@ -59,9 +58,7 @@ TEST(ScsiGenericTest, SetUp)
 
 TEST(ScsiGenericTest, Dispatch)
 {
-    auto [controller, d] = CreateDevice(SCSG);
-    // Work-around for an issue with old compilers
-    auto device = d;
+    auto [controller, device] = CreateDevice(SCSG);
 
     EXPECT_THAT([&] { device->Dispatch(static_cast<ScsiCommand>(0x1f)); },
         Throws<ScsiException>(AllOf(

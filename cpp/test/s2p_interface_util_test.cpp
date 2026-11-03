@@ -32,9 +32,11 @@ TEST(S2pInterfaceUtilTest, ParseDeviceType)
     EXPECT_EQ(SCTP, ParseDeviceType("sctp"));
     EXPECT_EQ(SCSG, ParseDeviceType("scsg"));
     EXPECT_EQ(SCSG, ParseDeviceType(" scsg "));
+    EXPECT_EQ(SCSG, ParseDeviceType(" SCSG "));
 
     EXPECT_EQ(SCCD, ParseDeviceType("c"));
     EXPECT_EQ(SCDP, ParseDeviceType("d"));
+    EXPECT_EQ(SCSG, ParseDeviceType("g"));
     EXPECT_EQ(SCHD, ParseDeviceType("h"));
     EXPECT_EQ(SCLP, ParseDeviceType("l"));
     EXPECT_EQ(SCMO, ParseDeviceType("m"));
