@@ -122,16 +122,10 @@ TEST(AbstractControllerTest, Reset)
     controller.AddDevice(device);
 
     controller.SetPhase(BusPhase::STATUS, "");
-    controller.SetTransferSize(10, 5);
-    controller.SetCurrentLength(20);
     EXPECT_EQ(BusPhase::STATUS, controller.GetPhase());
     controller.Reset();
     EXPECT_TRUE(controller.IsBusFree());
     EXPECT_EQ(GOOD, controller.GetStatus());
-    EXPECT_EQ(0, controller.GetCurrentLength());
-    EXPECT_EQ(0, controller.GetOffset());
-    EXPECT_EQ(0, controller.GetRemainingLength());
-    EXPECT_EQ(0, controller.GetChunkSize());
     EXPECT_EQ(-1, controller.GetInitiatorId());
 }
 

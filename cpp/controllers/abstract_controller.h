@@ -215,7 +215,7 @@ private:
 
     array<uint8_t, 16> cdb = { };
 
-    // Shared transfer data buffer, dynamically resized
+    // Shared transfer data buffer (there is never more than one active transfer), dynamically resized
     inline static auto buffer = vector<uint8_t>(512);
     // Transfer offset
     int offset = 0;

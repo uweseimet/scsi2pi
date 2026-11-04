@@ -33,11 +33,6 @@ void AbstractController::Reset()
 {
     SetPhase(BusPhase::BUS_FREE, "BUS FREE phase");
 
-    offset = 0;
-    remaining_length = 0;
-    current_length = 0;
-    chunk_size = 0;
-
     status = GOOD;
 
     initiator_id = UNKNOWN_INITIATOR_ID;
@@ -124,6 +119,11 @@ ShutdownMode AbstractController::ProcessOnController(int ids)
         initiator_id = UNKNOWN_INITIATOR_ID;
         LogTrace("++++ Starting processing for unknown initiator ID");
     }
+
+    offset = 0;
+    remaining_length = 0;
+    current_length = 0;
+    chunk_size = 0;
 
     while (Process()) {
         // Handle bus phases until the bus is free for the next command

@@ -140,9 +140,13 @@ public:
     using Controller::Controller;
     MockController(Bus &b, int t) : Controller(b, t, nullptr, formatter)
     {
+        ResetOffset();
+        SetCurrentLength(0);
     }
     explicit MockController(Bus &b) : Controller(b, 0, nullptr, formatter)
     {
+        ResetOffset();
+        SetCurrentLength(0);
     }
     ~MockController() override = default;
 };
