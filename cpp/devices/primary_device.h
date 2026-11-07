@@ -65,7 +65,6 @@ public:
         return level;
     }
     bool SetScsiLevel(ScsiLevel);
-    bool SetResponseDataFormat(ScsiLevel);
 
     enum SenseKey GetSenseKey() const
     {
@@ -179,7 +178,6 @@ private:
         { "SCSI2Pi", "", fmt::format("{:02}{:1}{:1}", s2p_major_version, s2p_minor_version, s2p_revision) });
 
     ScsiLevel level = ScsiLevel::NONE;
-    ScsiLevel response_data_format = ScsiLevel::SCSI_1_CCS;
 
     SenseKey sense_key = NO_SENSE;
     Asc asc = NO_ADDITIONAL_SENSE_INFORMATION;

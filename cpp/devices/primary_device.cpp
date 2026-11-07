@@ -189,17 +189,6 @@ bool PrimaryDevice::SetScsiLevel(ScsiLevel l)
     return true;
 }
 
-bool PrimaryDevice::SetResponseDataFormat(ScsiLevel l)
-{
-    if (l == ScsiLevel::NONE || l > ScsiLevel::SCSI_2) {
-        return false;
-    }
-
-    response_data_format = l;
-
-    return true;
-}
-
 void PrimaryDevice::SetController(AbstractController *c)
 {
     controller = c;
@@ -351,6 +340,7 @@ vector<uint8_t> PrimaryDevice::HandleInquiry() const
     buf[0] = to_underlying(device_type != DEVICE_TYPE_MAPPING.end() ? device_type->second : DeviceType::DIRECT_ACCESS);
     buf[1] = IsRemovable() ? 0x80 : 0x00;
     buf[2] = to_underlying(level);
+    // Derive response data format from SCSI level
     buf[3] = level >= ScsiLevel::SCSI_2 ? to_underlying(ScsiLevel::SCSI_2) : to_underlying(ScsiLevel::SCSI_1_CCS);
     buf[4] = 0x1f;
     // Signal support of linked commands

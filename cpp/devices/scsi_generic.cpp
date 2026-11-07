@@ -320,7 +320,6 @@ string ScsiGeneric::GetDeviceData()
     const auto& [vendor, product, revision] = GetInquiryProductData(buf);
     SetProductData( { vendor, product, revision }, true);
     SetScsiLevel(static_cast<ScsiLevel>(buf[2]));
-    SetResponseDataFormat(static_cast<ScsiLevel>(buf[3]));
 
     return "";
 }
