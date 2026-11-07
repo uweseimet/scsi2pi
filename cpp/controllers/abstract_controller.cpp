@@ -150,5 +150,7 @@ bool AbstractController::RemoveDevice(PrimaryDevice &device)
 {
     device.CleanUp();
 
+    device.SetController(nullptr);
+
     return luns.erase(device.GetLun()) == 1;
 }

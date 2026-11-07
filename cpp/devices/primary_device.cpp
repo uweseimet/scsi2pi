@@ -204,7 +204,9 @@ void PrimaryDevice::SetController(AbstractController *c)
 {
     controller = c;
 
-    CreateDeviceLogger();
+    if (controller != nullptr) {
+        CreateDeviceLogger();
+    }
 }
 
 void PrimaryDevice::StatusPhase() const
