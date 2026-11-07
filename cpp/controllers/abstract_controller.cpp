@@ -67,7 +67,7 @@ void AbstractController::SetTransferSize(int length, int size)
     remaining_length = length;
 
     // The number of bytes to transfer in a single chunk
-    chunk_size = length < size ? length : size;
+    chunk_size = min(length, size);
 }
 
 void AbstractController::UpdateTransferLength(int length)

@@ -461,7 +461,7 @@ void Controller::Receive()
         return;
     }
 
-    const int length = GetChunkSize() < GetRemainingLength() ? GetChunkSize() : GetRemainingLength();
+    const int length = min(GetChunkSize(), GetRemainingLength());
 
     // Processing after receiving data
     switch (GetPhase()) {
@@ -510,7 +510,7 @@ void Controller::TransferToHost()
     try {
         GetDeviceForLun(GetEffectiveLun())->ReadData(GetBuffer());
         if (GetRemainingLength()) {
-            SetCurrentLength(GetRemainingLength() < GetChunkSize() ? GetRemainingLength() : GetChunkSize());
+            SetCurrentLength(min(GetRemainingLength(), GetChunkSize()));
             ResetOffset();
         }
     }

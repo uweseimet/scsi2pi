@@ -38,6 +38,8 @@ public:
         string revision;
     };
 
+    PrimaryDevice& operator=(const PrimaryDevice&) = delete;
+
     string Init();
     virtual string SetUp() = 0;
     virtual void CleanUp()

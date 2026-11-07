@@ -105,7 +105,7 @@ public:
     {
         supports_params = b;
     }
-    auto GetParams() const
+    const param_map& GetParams() const
     {
         return params;
     }
@@ -162,7 +162,7 @@ protected:
         locked = b;
     }
 
-    string GetParam(const string&) const;
+    string GetParam(string_view) const;
 
     void CreateDeviceLogger();
 

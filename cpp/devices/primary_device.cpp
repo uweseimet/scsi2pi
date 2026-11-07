@@ -80,8 +80,11 @@ void PrimaryDevice::AddCommand(ScsiCommand cmd, const command &c)
 void PrimaryDevice::Dispatch(ScsiCommand cmd)
 {
     if (const auto &command = commands[to_underlying(cmd)]; command) {
-        LogDebug("Device is executing {} (${:02x})", CommandMetaData::GetInstance().GetCommandName(cmd),
-            to_underlying(cmd));
+        if (GetLogger().should_log(level::debug)) {
+            LogDebug("Device is executing {} (${:02x})", CommandMetaData::GetInstance().GetCommandName(cmd),
+                to_underlying(cmd));
+        }
+
         meta_data = &CommandMetaData::GetInstance().GetCdbMetaData(cmd);
         command();
     }
