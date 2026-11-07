@@ -173,21 +173,21 @@ protected:
     }
 
     template<typename ... Args>
-    void LogDebug(fmt::format_string<Args...> fmt, Args &&... args) const
+    void LogDebug(fmt::format_string<Args...> f, Args &&... args) const
     {
-        device_logger->debug(fmt::format(fmt, std::forward<Args>(args)...));
+        device_logger->debug(f, std::forward<Args>(args)...);
     }
 
     template<typename ... Args>
-    void LogWarn(fmt::format_string<Args...> fmt, Args &&... args) const
+    void LogWarn(fmt::format_string<Args...> f, Args &&... args) const
     {
-        device_logger->warn(fmt::format(fmt, std::forward<Args>(args)...));
+        device_logger->warn(f, std::forward<Args>(args)...);
     }
 
     template<typename ... Args>
-    void LogError(fmt::format_string<Args...> fmt, Args &&... args) const
+    void LogError(fmt::format_string<Args...> f, Args &&... args) const
     {
-        device_logger->error(fmt::format(fmt, std::forward<Args>(args)...));
+        device_logger->error(f, std::forward<Args>(args)...);
     }
 
 private:

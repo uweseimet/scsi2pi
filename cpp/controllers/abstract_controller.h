@@ -192,21 +192,21 @@ protected:
     void UpdateOffsetAndLength();
 
     template<typename ... Args>
-    void LogTrace(fmt::format_string<Args...> fmt, Args &&... args) const
+    void LogTrace(fmt::format_string<Args...> f, Args &&... args) const
     {
-        controller_logger->trace(fmt::format(fmt, std::forward<Args>(args)...));
+        controller_logger->trace(f, std::forward<Args>(args)...);
     }
 
     template<typename ... Args>
-    void LogDebug(fmt::format_string<Args...> fmt, Args &&... args) const
+    void LogDebug(fmt::format_string<Args...> f, Args &&... args) const
     {
-        controller_logger->debug(fmt::format(fmt, std::forward<Args>(args)...));
+        controller_logger->debug(f, std::forward<Args>(args)...);
     }
 
     template<typename ... Args>
-    void LogWarn(fmt::format_string<Args...> fmt, Args &&... args) const
+    void LogWarn(fmt::format_string<Args...> f, Args &&... args) const
     {
-        controller_logger->warn(fmt::format(fmt, std::forward<Args>(args)...));
+        controller_logger->warn(f, std::forward<Args>(args)...);
     }
 
 private:
