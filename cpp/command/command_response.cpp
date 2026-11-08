@@ -350,7 +350,7 @@ void command_response::GetDevicesInfo(const vector<shared_ptr<PrimaryDevice>> &d
         // Work-around for old versions of clang++, which have issues with referencing i/l in the lambda below
         const int id = i;
         const int lun = l;
-        if (const auto &it = ranges::find_if(devices,
+        if (const auto it = ranges::find_if(devices,
             [&id, &lun](const auto &d) {return d->GetId() == id && d->GetLun() == lun;}); it != devices.end()) {
             GetDevice(**it, *result.mutable_devices_info()->add_devices());
         }

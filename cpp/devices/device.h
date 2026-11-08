@@ -167,9 +167,9 @@ protected:
     void CreateDeviceLogger();
 
     template<typename ... Args>
-    void LogTrace(fmt::format_string<Args...> fmt, Args &&... args) const
+    void LogTrace(fmt::format_string<Args...> f, Args &&... args) const
     {
-        device_logger->trace(fmt::format(fmt, std::forward<Args>(args)...));
+        device_logger->trace(f, std::forward<Args>(args)...);
     }
 
     template<typename ... Args>

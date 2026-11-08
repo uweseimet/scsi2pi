@@ -105,7 +105,7 @@ vector<shared_ptr<PrimaryDevice>> AbstractController::GetDevices() const
 
 shared_ptr<PrimaryDevice> AbstractController::GetDeviceForLun(int lun) const
 {
-    const auto &it = luns.find(lun);
+    const auto it = luns.find(lun);
     return it == luns.end() ? nullptr : it->second;
 }
 
@@ -146,11 +146,22 @@ bool AbstractController::AddDevice(shared_ptr<PrimaryDevice> device)
     return true;
 }
 
-bool AbstractController::RemoveDevice(PrimaryDevice &device)
+[[nodiscard]] bool AbstractController::RemoveDevice(PrimaryDevice &device)
 {
+    const auto it = luns.find(device.GetLun());
+    if (it == luns.end() || it->second.get() != &device) {
+        return false;
+    }
+
+    if (!device.GetLun() && luns.size() > 1) {
+        return false;
+    }
+
     device.CleanUp();
 
     device.SetController(nullptr);
 
-    return luns.erase(device.GetLun()) == 1;
+    luns.erase(it);
+
+    return true;
 }

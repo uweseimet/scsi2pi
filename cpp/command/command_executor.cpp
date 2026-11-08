@@ -613,7 +613,7 @@ bool CommandExecutor::EnsureLun0(const CommandContext &context) const
         luns[device->GetId()] |= 1U << device->GetLun();
     }
 
-    const auto &it = ranges::find_if_not(luns, [](const auto &l) {return l.second & 0x01;});
+    const auto it = ranges::find_if_not(luns, [](const auto &l) {return l.second & 0x01;});
     return it == luns.end() ? true : context.ReturnLocalizedError(ERROR_MISSING_LUN0, (*it).first);
 }
 

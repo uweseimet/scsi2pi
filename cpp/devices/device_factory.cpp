@@ -130,13 +130,13 @@ shared_ptr<PrimaryDevice> DeviceFactory::CreateDevice(PbDeviceType type, int lun
 
 PbDeviceType DeviceFactory::GetTypeForFile(const path &filename) const
 {
-    if (const auto &it = mapping.find(GetExtensionLowerCase(filename)); it != mapping.end()) {
+    if (const auto it = mapping.find(GetExtensionLowerCase(filename)); it != mapping.end()) {
         return it->second;
     }
 
     const string f = filename.string();
 
-    if (const auto &it = ALIAS_MAPPING.find(f); it != ALIAS_MAPPING.end()) {
+    if (const auto it = ALIAS_MAPPING.find(f); it != ALIAS_MAPPING.end()) {
         return it->second;
     }
 

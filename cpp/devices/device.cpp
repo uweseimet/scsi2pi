@@ -28,7 +28,7 @@ void Device::SetProtected(bool b)
 
 string Device::GetParam(string_view key) const
 {
-    const auto &it = params.find(key);
+    const auto it = params.find(key);
     return it == params.end() ? "" : it->second;
 }
 

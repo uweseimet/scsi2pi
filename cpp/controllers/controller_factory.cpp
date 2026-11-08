@@ -16,7 +16,7 @@ bool ControllerFactory::AttachToController(Bus &bus, int id, shared_ptr<PrimaryD
     device->GetLogger().set_level(log_level);
     device->SetLogPattern(log_pattern);
 
-    if (const auto &it = controllers.find(id); it != controllers.end()) {
+    if (const auto it = controllers.find(id); it != controllers.end()) {
         return it->second->AddDevice(device);
     }
 
@@ -72,10 +72,10 @@ string ControllerFactory::SetScriptFile(const string &filename)
 
 ShutdownMode ControllerFactory::ProcessOnController(uint8_t ids) const
 {
-    if (const auto &it = ranges::find_if(controllers, [&ids](const auto &controller) {
+    if (const auto it = ranges::find_if(controllers, [&ids](const auto &controller) {
         return (ids & (1 << controller.first));
     }); it != controllers.end()) {
-        return (*it).second->ProcessOnController(ids);
+        return it->second->ProcessOnController(ids);
     }
 
     return ShutdownMode::NONE;
@@ -95,7 +95,7 @@ vector<shared_ptr<PrimaryDevice>> ControllerFactory::GetAllDevices() const
 
 shared_ptr<PrimaryDevice> ControllerFactory::GetDeviceForIdAndLun(int id, int lun) const
 {
-    const auto &it = controllers.find(id);
+    const auto it = controllers.find(id);
     return it == controllers.end() ? nullptr : it->second->GetDeviceForLun(lun);
 }
 

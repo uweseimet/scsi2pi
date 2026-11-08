@@ -165,7 +165,7 @@ void HostServices::ReceiveOperationResults()
 {
     const ProtobufFormat output_format = ConvertFormat();
 
-    const auto &it = execution_results.find(GetController()->GetInitiatorId());
+    const auto it = execution_results.find(GetController()->GetInitiatorId());
     if (it == execution_results.end()) {
         throw ScsiException(ILLEGAL_REQUEST, DATA_CURRENTLY_UNAVAILABLE);
     }

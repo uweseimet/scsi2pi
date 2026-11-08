@@ -453,7 +453,7 @@ void S2p::AttachInitialDevices(PbCommand &command)
 
 bool S2p::CheckActive(const property_map &properties, const string &id_and_lun)
 {
-    if (const auto &it = properties.find(PropertyHandler::DEVICE + id_and_lun + ".active"); it != properties.end()) {
+    if (const auto it = properties.find(PropertyHandler::DEVICE + id_and_lun + ".active"); it != properties.end()) {
         const string &active = it->second;
         if (active != "true" && active != "false") {
             throw ParserException("Invalid boolean: '{}'", active);

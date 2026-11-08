@@ -18,7 +18,7 @@ PbDeviceType s2p_interface_util::ParseDeviceType(string_view value)
 
     // Also handle convenience one-letter device types (shortcuts)
     if (!PbDeviceType_Parse(ToUpper(Trim(value)), &type) && value.size() == 1) {
-        const auto &it = DEVICE_TYPES.find(tolower(value[0]));
+        const auto it = DEVICE_TYPES.find(tolower(value[0]));
         type = it != DEVICE_TYPES.end() ? it->second : UNDEFINED;
     }
 

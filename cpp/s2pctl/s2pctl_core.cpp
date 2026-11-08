@@ -486,6 +486,6 @@ int S2pCtl::ParseArguments(const span<char*> args) // NOSONAR Acceptable complex
 
 PbOperation S2pCtl::ParseOperation(string_view operation)
 {
-    const auto &it = OPERATIONS.find(tolower(operation[0]));
+    const auto it = OPERATIONS.find(tolower(operation[0]));
     return it != OPERATIONS.end() ? it->second : NO_OPERATION;
 }

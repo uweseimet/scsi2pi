@@ -145,6 +145,6 @@ void VirtualBus::LogSignal(const string &msg) const
 
 string VirtualBus::GetSignalName(int pin_mask)
 {
-    const auto &it = SIGNALS_TO_LOG.find(pin_mask);
+    const auto it = SIGNALS_TO_LOG.find(pin_mask);
     return it != SIGNALS_TO_LOG.end() ? it->second : "";
 }

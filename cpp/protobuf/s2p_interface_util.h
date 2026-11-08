@@ -21,7 +21,7 @@ namespace s2p_interface_util
 
 string GetParam(const auto &item, const string &key)
 {
-    const auto &it = item.params().find(key);
+    const auto it = item.params().find(key);
     return it != item.params().end() ? it->second : "";
 }
 

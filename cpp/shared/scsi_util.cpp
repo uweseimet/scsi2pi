@@ -51,7 +51,7 @@ string scsi_util::GetScsiLevel(int scsi_level)
 
 string scsi_util::GetStatusString(int status_code)
 {
-    if (const auto &it = STATUS_MAPPING.find(static_cast<StatusCode>(status_code)); it != STATUS_MAPPING.end()) {
+    if (const auto it = STATUS_MAPPING.find(static_cast<StatusCode>(status_code)); it != STATUS_MAPPING.end()) {
         return fmt::format("Device reported {} (status code ${:02x})", it->second, status_code);
     }
     else if (status_code != 0xff) {
@@ -85,7 +85,7 @@ string scsi_util::FormatSenseData(SenseKey sense_key, Asc asc, Ascq ascq)
     assert(to_underlying(sense_key) < 16);
 
     string s_asc;
-    if (const auto &it_asc = ASC_MAPPING.find(asc); it_asc != ASC_MAPPING.end()) {
+    if (const auto it_asc = ASC_MAPPING.find(asc); it_asc != ASC_MAPPING.end()) {
         s_asc = fmt::format("{} (ASC ${:02x}), ASCQ ${:02x}", it_asc->second, to_underlying(asc), to_underlying(ascq));
     }
     else {

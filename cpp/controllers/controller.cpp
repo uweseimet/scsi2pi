@@ -527,6 +527,7 @@ bool Controller::TransferFromHost(int length)
     int transferred_length = length;
     const auto device = GetDeviceForLun(GetEffectiveLun());
     try {
+        // TODO Replace check for SCSG, let the device decide
         if (meta_data.has_custom_data_out && device->GetType() != SCSG) {
             // The offset is the number of bytes transferred, i.e. the length of the parameter list
             device->ModeSelect(GetCdb(), GetBuffer(), GetOffset());

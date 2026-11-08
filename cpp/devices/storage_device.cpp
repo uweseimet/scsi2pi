@@ -166,7 +166,7 @@ void StorageDevice::ModeSelect(cdb_t cdb, data_out_t buf, int length)
     while (length > 0) {
         const auto page_code = to_underlying(byte { buf[offset] } & byte { 0x3f });
 
-        const auto &it = pages.find(page_code);
+        const auto it = pages.find(page_code);
         if (it == pages.end()) {
             throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_PARAMETER_LIST);
         }
@@ -334,7 +334,7 @@ void StorageDevice::UnreserveFile()
 
 id_set StorageDevice::GetIdsForReservedFile(const string &file)
 {
-    if (const auto &it = reserved_files.find(file); it != reserved_files.end()) {
+    if (const auto it = reserved_files.find(file); it != reserved_files.end()) {
         return {it->second.first, it->second.second};
     }
 
