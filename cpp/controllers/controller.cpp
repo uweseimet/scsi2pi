@@ -78,7 +78,7 @@ void Controller::BusFree()
 
         identified_lun = -1;
 
-        atn_msg = false;
+        ResetFlags();
 
         return;
     }
@@ -228,6 +228,12 @@ void Controller::Status()
         return;
     }
 
+    // Any status other than GOOD or CONDITION MET ends a series of linked commands (SCSI-2 7.3.5)
+    if (linked && GetStatus() != GOOD && GetStatus() != CONDITION_MET) {
+        linked = false;
+        flag = false;
+    }
+
     SetPhase(BusPhase::STATUS,
         fmt::format("STATUS phase, status is {} (status code ${:02x})", STATUS_MAPPING.at(GetStatus()),
             to_underlying(GetStatus())));
@@ -241,9 +247,11 @@ void Controller::Status()
     SetTransferSize(1, 1);
 
     // If this is a successfully terminated linked command convert the status code
-    GetBuffer()[0] =
-        linked && GetStatus() == GOOD ?
-            to_underlying(INTERMEDIATE) : to_underlying(GetStatus());
+    StatusCode s = GetStatus();
+    if (linked) {
+        s = s == CONDITION_MET ? INTERMEDIATE_CONDITION_MET : INTERMEDIATE;
+    }
+    GetBuffer()[0] = to_underlying(s);
 }
 
 void Controller::MsgIn()
