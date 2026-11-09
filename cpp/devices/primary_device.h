@@ -133,7 +133,7 @@ protected:
 
     const CommandMetaData::CdbMetaData& GetMetaData() const
     {
-        return *meta_data;
+        return *cdb_meta_data;
     }
 
     virtual void Inquiry();
@@ -193,7 +193,7 @@ private:
     // Owned by the controller factory
     AbstractController *controller = nullptr;
 
-    const CommandMetaData::CdbMetaData *meta_data = nullptr;
+    const CommandMetaData::CdbMetaData *cdb_meta_data = nullptr;
 
     array<command, 256> commands = { };
 

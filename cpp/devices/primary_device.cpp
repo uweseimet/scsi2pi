@@ -85,7 +85,7 @@ void PrimaryDevice::Dispatch(ScsiCommand cmd)
                 to_underlying(cmd));
         }
 
-        meta_data = &CommandMetaData::GetInstance().GetCdbMetaData(cmd);
+        cdb_meta_data = &CommandMetaData::GetInstance().GetCdbMetaData(cmd);
         command();
     }
     else {
