@@ -42,14 +42,15 @@ void AbstractController::Reset()
     }
 }
 
-bool AbstractController::ProcessPhase()
+void AbstractController::ProcessPhase()
 {
     if (const auto index = to_underlying(phase); PHASE_HANDLERS[index]) {
         (this->*PHASE_HANDLERS[index])();
-        return true;
     }
-
-    return false;
+    else {
+        assert(false);
+        Error(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
+    }
 }
 
 void AbstractController::SetCurrentLength(int length)

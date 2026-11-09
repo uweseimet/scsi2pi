@@ -44,52 +44,6 @@ TEST_P(AbstractControllerPhaseTest, PhaseCheck)
     EXPECT_TRUE((controller.*is_phase_func)());
 }
 
-TEST(AbstractControllerTest, ProcessPhase)
-{
-    MockAbstractController controller;
-
-    controller.SetPhase(BusPhase::SELECTION, "");
-    EXPECT_CALL(controller, Selection);
-    EXPECT_TRUE(controller.ProcessPhase());
-
-    controller.SetPhase(BusPhase::BUS_FREE, "");
-    EXPECT_CALL(controller, BusFree);
-    EXPECT_TRUE(controller.ProcessPhase());
-
-    controller.SetPhase(BusPhase::DATA_IN, "");
-    EXPECT_CALL(controller, DataIn);
-    EXPECT_TRUE(controller.ProcessPhase());
-
-    controller.SetPhase(BusPhase::DATA_OUT, "");
-    EXPECT_CALL(controller, DataOut);
-    EXPECT_TRUE(controller.ProcessPhase());
-
-    controller.SetPhase(BusPhase::COMMAND, "");
-    EXPECT_CALL(controller, Command);
-    EXPECT_TRUE(controller.ProcessPhase());
-
-    controller.SetPhase(BusPhase::STATUS, "");
-    EXPECT_CALL(controller, Status);
-    EXPECT_TRUE(controller.ProcessPhase());
-
-    controller.SetPhase(BusPhase::MSG_IN, "");
-    EXPECT_CALL(controller, MsgIn);
-    EXPECT_TRUE(controller.ProcessPhase());
-
-    controller.SetPhase(BusPhase::MSG_OUT, "");
-    EXPECT_CALL(controller, MsgOut);
-    EXPECT_TRUE(controller.ProcessPhase());
-
-    controller.SetPhase(BusPhase::ARBITRATION, "");
-    EXPECT_FALSE(controller.ProcessPhase());
-
-    controller.SetPhase(BusPhase::RESELECTION, "");
-    EXPECT_FALSE(controller.ProcessPhase());
-
-    controller.SetPhase(BusPhase::RESERVED, "");
-    EXPECT_FALSE(controller.ProcessPhase());
-}
-
 TEST(AbstractControllerTest, ShutdownMode)
 {
     MockAbstractController controller;

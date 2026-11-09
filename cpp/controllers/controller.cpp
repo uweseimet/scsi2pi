@@ -59,10 +59,11 @@ bool Controller::Process()
         return false;
     }
 
-    // TODO Catch ScsiException here instead of everywhere else and call Error()?
-    if (!ProcessPhase()) {
-        Error(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
-        return false;
+    try {
+        ProcessPhase();
+    }
+    catch(const ScsiException &e) {
+        Error(e.GetSenseKey(), e.GetAsc());
     }
 
     return !IsBusFree();
@@ -215,12 +216,7 @@ void Controller::Execute(ScsiCommand cmd)
         device->ResetStatus();
     }
 
-    try {
-        device->Dispatch(cmd);
-    }
-    catch (const ScsiException &e) {
-        Error(e.GetSenseKey(), e.GetAsc());
-    }
+    device->Dispatch(cmd);
 }
 
 void Controller::Status()
@@ -517,38 +513,26 @@ void Controller::TransferToHost()
 {
     assert(!CommandMetaData::GetInstance().GetCdbMetaData(static_cast<ScsiCommand>(GetCdb()[0])).has_data_out);
 
-    try {
-        GetDeviceForLun(GetEffectiveLun())->ReadData(GetBuffer());
-        if (GetRemainingLength()) {
-            SetCurrentLength(min(GetRemainingLength(), GetChunkSize()));
-            ResetOffset();
-        }
-    }
-    catch (const ScsiException &e) {
-        Error(e.GetSenseKey(), e.GetAsc());
+    GetDeviceForLun(GetEffectiveLun())->ReadData(GetBuffer());
+    if (GetRemainingLength()) {
+        SetCurrentLength(min(GetRemainingLength(), GetChunkSize()));
+        ResetOffset();
     }
 }
 
 bool Controller::TransferFromHost(int length)
 {
-    const auto meta_data = CommandMetaData::GetInstance().GetCdbMetaData(static_cast<ScsiCommand>(GetCdb()[0]));
-    assert(meta_data.has_data_out);
-
     int transferred_length = length;
     const auto device = GetDeviceForLun(GetEffectiveLun());
-    try {
-        // TODO Replace check for SCSG, let the device decide
-        if (meta_data.has_custom_data_out && device->GetType() != SCSG) {
-            // The offset is the number of bytes transferred, i.e. the length of the parameter list
-            device->ModeSelect(GetCdb(), GetBuffer(), GetOffset());
-        }
-        else {
-            transferred_length = device->WriteData(GetCdb(), GetBuffer(), length);
-        }
+
+    // TODO Replace check for SCSG, let the device decide
+    if (const auto meta_data = CommandMetaData::GetInstance().GetCdbMetaData(static_cast<ScsiCommand>(GetCdb()[0])); meta_data.has_custom_data_out
+        && device->GetType() != SCSG) {
+        // The offset is the number of bytes transferred, i.e. the length of the parameter list
+        device->ModeSelect(GetCdb(), GetBuffer(), GetOffset());
     }
-    catch (const ScsiException &e) {
-        Error(e.GetSenseKey(), e.GetAsc());
-        return false;
+    else {
+        transferred_length = device->WriteData(GetCdb(), GetBuffer(), length);
     }
 
     UpdateTransferLength(transferred_length);

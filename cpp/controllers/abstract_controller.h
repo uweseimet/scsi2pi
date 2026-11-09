@@ -92,7 +92,7 @@ public:
         return phase == BusPhase::MSG_OUT;
     }
 
-    bool ProcessPhase();
+    void ProcessPhase();
 
     virtual void Error(SenseKey, Asc = NO_ADDITIONAL_SENSE_INFORMATION, StatusCode = CHECK_CONDITION) = 0;
 
