@@ -11,6 +11,7 @@
 #include <gmock/gmock.h>
 #include "buses/gpio_bus.h"
 #include "controllers/controller.h"
+#include "controllers/script_generator.h"
 #include "devices/optical_memory.h"
 #include "devices/sasi_hd.h"
 #include "devices/scsi_cd.h"
@@ -138,12 +139,12 @@ public:
     MOCK_METHOD(void, Status, (), (override));
 
     using Controller::Controller;
-    MockController(Bus &b, int t) : Controller(b, t, nullptr, formatter)
+    MockController(Bus &b, int t) : Controller(b, t, make_shared<ScriptGenerator>(), formatter)
     {
         ResetOffset();
         SetCurrentLength(0);
     }
-    explicit MockController(Bus &b) : Controller(b, 0, nullptr, formatter)
+    explicit MockController(Bus &b) : Controller(b, 0, make_shared<ScriptGenerator>(), formatter)
     {
         ResetOffset();
         SetCurrentLength(0);

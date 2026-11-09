@@ -190,7 +190,6 @@ TEST(ControllerTest, RequestSense)
     controller.SetCdbByte(1, 0x20);
 
     device->SetReady(true);
-    EXPECT_CALL(controller, Status);
     Dispatch(*device, REQUEST_SENSE);
     EXPECT_EQ(GOOD, controller.GetStatus()) << "Wrong CHECK CONDITION for non-existing LUN";
 }

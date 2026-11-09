@@ -198,7 +198,6 @@ void Controller::Execute(ScsiCommand cmd)
             return;
         }
 
-        // TODO Try to not use LUN 0 for reporting an invalid LUN for INQUIRY and REQUEST SENSE
         device = GetDeviceForLun(0);
         if (!device) {
             throw ScsiException(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);

@@ -277,14 +277,17 @@ void PrimaryDevice::RequestSense()
     // According to the specification. REQUEST SENSE for non-existing LUNs does not report CHECK CONDITION.
     // Only the Sense Key and ASC are set to signal the non-existing LUN.
     if (!controller->GetDeviceForLun(effective_lun)) {
-        if (!controller->GetDeviceForLun(0)) {
+        auto lun0 = controller->GetDeviceForLun(0);
+        if (!lun0) {
             throw ScsiException(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
         }
 
         effective_lun = 0;
 
+        // Do not call Error(), because this would switch to the STATUS phase and skip the DATA IN phase
+        lun0->SetStatus(ILLEGAL_REQUEST, LOGICAL_UNIT_NOT_SUPPORTED);
         // When signalling an invalid LUN, the status must be GOOD
-        controller->Error(ILLEGAL_REQUEST, LOGICAL_UNIT_NOT_SUPPORTED, GOOD);
+        controller->SetStatus(GOOD);
     }
 
     const vector<byte> &buf = controller->GetDeviceForLun(effective_lun)->HandleRequestSense();
