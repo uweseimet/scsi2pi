@@ -31,10 +31,9 @@ void Controller::Reset()
 
     identified_lun = -1;
 
-    deferred_sense_key = NO_SENSE;
-    deferred_asc = NO_ADDITIONAL_SENSE_INFORMATION;
-
     ResetFlags();
+
+    ResetDeferredSenseData();
 }
 
 void Controller::ResetFlags()
@@ -42,6 +41,12 @@ void Controller::ResetFlags()
     linked = false;
     flag = false;
     atn_msg = false;
+}
+
+void Controller::ResetDeferredSenseData()
+{
+    deferred_sense_key = NO_SENSE;
+    deferred_asc = NO_ADDITIONAL_SENSE_INFORMATION;
 }
 
 bool Controller::Process()
@@ -134,8 +139,6 @@ void Controller::Command()
         }
 
         const int command_bytes_count = CommandMetaData::GetInstance().GetByteCount(static_cast<ScsiCommand>(buf[0]));
-        assert(command_bytes_count && command_bytes_count <= static_cast<int>(GetCdb().size()));
-
         for (int i = 0; i < command_bytes_count; ++i) {
             SetCdbByte(i, buf[i]);
         }
@@ -150,9 +153,11 @@ void Controller::Command()
                 CommandMetaData::GetInstance().LogCdb(span(buf.data(), command_bytes_count), "Controller")));
         }
 
+        const auto cmd = static_cast<ScsiCommand>(GetCdb()[0]);
+
         if (actual_count != command_bytes_count) {
-            LogWarn("Received {} byte(s) in COMMAND phase for command ${:02x}, {} required", actual_count, GetCdb()[0],
-                command_bytes_count);
+            LogWarn("Received {} byte(s) in COMMAND phase for command ${:02x}, {} required", actual_count,
+                to_underlying(cmd), command_bytes_count);
             bus.Reset();
             RaiseDeferredError(ABORTED_COMMAND, COMMAND_PHASE_ERROR);
             return;
@@ -168,53 +173,50 @@ void Controller::Command()
         }
 
         // Ensure correct sense data if the previous command was rejected by the controller and not by the device
-        if (deferred_sense_key != NO_SENSE
-            && static_cast<ScsiCommand>(GetCdb()[0]) == REQUEST_SENSE) {
+        if (deferred_sense_key != NO_SENSE && cmd == REQUEST_SENSE) {
             ProvideSenseData();
-            return;
         }
-        deferred_sense_key = NO_SENSE;
-        deferred_asc = NO_ADDITIONAL_SENSE_INFORMATION;
-
-        Execute();
+        else {
+            Execute(cmd);
+        }
     }
 }
 
-void Controller::Execute()
+void Controller::Execute(ScsiCommand cmd)
 {
+    ResetDeferredSenseData();
+
     SetCurrentLength(0);
     ResetOffset();
     SetTransferSize(0, 0);
 
-    const auto opcode = static_cast<ScsiCommand>(GetCdb()[0]);
-
     auto device = GetDeviceForLun(GetEffectiveLun());
     if (!device) {
-        if (opcode != INQUIRY && opcode != REQUEST_SENSE) {
+        if (cmd != INQUIRY && cmd != REQUEST_SENSE) {
             Error(ILLEGAL_REQUEST, LOGICAL_UNIT_NOT_SUPPORTED);
             return;
         }
 
+        // TODO Try to not use LUN 0 for reporting an invalid LUN for INQUIRY and REQUEST SENSE
         device = GetDeviceForLun(0);
         if (!device) {
             throw ScsiException(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
         }
     }
-
     // A reservation conflict is a pure status
-    if (!device->CheckReservation(GetInitiatorId())) {
+    else if (!device->CheckReservation(GetInitiatorId())) {
         Error(NO_SENSE, NO_ADDITIONAL_SENSE_INFORMATION, RESERVATION_CONFLICT);
         return;
     }
 
     // Discard pending sense data from the previous command if the current command is not REQUEST SENSE
-    if (opcode != REQUEST_SENSE) {
+    if (cmd != REQUEST_SENSE) {
         SetStatus(GOOD);
         device->ResetStatus();
     }
 
     try {
-        device->Dispatch(opcode);
+        device->Dispatch(cmd);
     }
     catch (const ScsiException &e) {
         Error(e.GetSenseKey(), e.GetAsc());
@@ -719,8 +721,7 @@ void Controller::ProcessEndOfMessage()
 
 void Controller::BusDeviceReset()
 {
-    deferred_sense_key = NO_SENSE;
-    deferred_asc = NO_ADDITIONAL_SENSE_INFORMATION;
+    ResetDeferredSenseData();
 
     // BUS DEVICE RESET applies to all LUNs
     for (const auto &device : GetDevices()) {
@@ -741,8 +742,6 @@ void Controller::RaiseDeferredError(SenseKey s, Asc a)
 
 void Controller::ProvideSenseData()
 {
-    SetCurrentLength(min(18, static_cast<int>(GetCdb()[4])));
-
     auto &buf = GetBuffer();
     fill_n(buf.begin(), 18, 0);
     buf[0] = 0x70;
@@ -750,9 +749,9 @@ void Controller::ProvideSenseData()
     buf[7] = 10;
     buf[12] = to_underlying(deferred_asc);
 
-    deferred_sense_key = NO_SENSE;
-    deferred_asc = NO_ADDITIONAL_SENSE_INFORMATION;
+    ResetDeferredSenseData();
 
+    SetCurrentLength(min(18, static_cast<int>(GetCdb()[4])));
     DataIn();
 }
 

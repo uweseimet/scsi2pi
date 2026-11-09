@@ -42,8 +42,9 @@ public:
 private:
 
     void ResetFlags();
+    void ResetDeferredSenseData();
 
-    void Execute();
+    void Execute(ScsiCommand);
     void Send();
     void Receive();
     void XferMsg();

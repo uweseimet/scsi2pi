@@ -138,6 +138,7 @@ CommandMetaData::CommandMetaData()
 
 void CommandMetaData::AddCommand(ScsiCommand cmd, int byte_count, string name, const CdbMetaData &meta_data)
 {
+    assert(byte_count && byte_count <= 16);
     assert(meta_data.allocation_length_offset <= 12);
     assert(meta_data.allocation_length_size <= 4);
 
