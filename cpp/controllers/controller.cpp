@@ -269,13 +269,13 @@ void Controller::MsgOut()
         return;
     }
 
-    SetPhase(BusPhase::MSG_OUT, "MESSAGE OUT phase");
-
     // Process the IDENTIFY message
     if (IsSelection()) {
         atn_msg = true;
         msg_bytes.clear();
     }
+
+    SetPhase(BusPhase::MSG_OUT, "MESSAGE OUT phase");
 
     bus.SetMSG(true);
     bus.SetCD(true);
