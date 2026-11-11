@@ -63,7 +63,7 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::RELEASE_RELEASE_ELEMENT_6, 6, "RELEASE(6)/RELEASE ELEMENT(6)",
         { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::ERASE_6, 6, "ERASE(6)", { 0, 0, 0, 0, false, false });
-    AddCommand(ScsiCommand::MODE_SENSE_6, 6, "MODE SENSE(6)", { 4, 1, 0, 0, false, true });
+    AddCommand(ScsiCommand::MODE_SENSE_6, 6, "MODE SENSE(6)", { 4, 1, 0, 0, false, false });
     AddCommand(ScsiCommand::START_STOP, 6, "START STOP UNIT/STOP PRINT", { 0, 0, 0, 0, false, false });
     AddCommand(ScsiCommand::SEND_DIAGNOSTIC, 6, "SEND DIAGNOSTIC", { 3, 2, 0, 0, false, false });
     AddCommand(ScsiCommand::PREVENT_ALLOW_MEDIUM_REMOVAL, 6, "PREVENT ALLOW MEDIUM REMOVAL",
@@ -101,7 +101,7 @@ CommandMetaData::CommandMetaData()
     AddCommand(ScsiCommand::READ_TRACK_INFORMATION, 10, "READ TRACK INFORMATION", { 7, 2, 0, 0, false, false });
     AddCommand(ScsiCommand::RESERVE_RESERVE_ELEMENT_10, 10, "RESERVE(10)/RESERVE ELEMENT(10)",
         { 7, 2, 0, 0, true, false });
-    AddCommand(ScsiCommand::MODE_SELECT_10, 10, "MODE SELECT(10)", { 7, 2, 0, 0, true, false });
+    AddCommand(ScsiCommand::MODE_SELECT_10, 10, "MODE SELECT(10)", { 7, 2, 0, 0, true, true });
     AddCommand(ScsiCommand::RELEASE_RELEASE_ELEMENT_10, 10, "RELEASE(10)/RELEASE ELEMENT(10)",
         { 7, 2, 0, 0, true, false });
     AddCommand(ScsiCommand::READ_MASTER_CUE, 10, "READ MASTER CUE", { 6, 3, 0, 0, false, false });
