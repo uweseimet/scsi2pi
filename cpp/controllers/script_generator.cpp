@@ -8,7 +8,6 @@
 
 #include "script_generator.h"
 #include <cassert>
-#include <iomanip>
 #include <spdlog/fmt/fmt.h>
 #include "shared/command_meta_data.h"
 #include "shared/s2p_util.h"
@@ -55,16 +54,17 @@ bool ScriptGenerator::AddData(span<const uint8_t> data)
 {
     assert(!data.empty());
 
-    file << " -d " << hex;
+    string s = " -d ";
+    s.reserve(s.size() + data.size() * 3 + data.size() / 16);
 
     for (size_t i = 0; i < data.size(); ++i) {
         if (i) {
-            file << (i % 16 == 0 ? "\\\n" : ":");
+            s += i % 16 == 0 ? "\\\n" : ":";
         }
-        file << setfill('0') << setw(2) << static_cast<int>(data[i]);
+        fmt::format_to(back_inserter(s), "{:02x}", data[i]);
     }
 
-    file << flush;
+    file << s << flush;
 
     return file.good();
 }

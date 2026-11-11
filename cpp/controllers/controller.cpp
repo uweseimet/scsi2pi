@@ -45,6 +45,13 @@ void Controller::ResetFlags()
 
 void Controller::ResetDeferredSenseData()
 {
+    // The device received the same sense data in Error(), so it must not report it a second time
+    if (deferred_sense_key != NO_SENSE) {
+        if (const auto device = GetDeviceForLun(deferred_lun)) {
+            device->ResetStatus();
+        }
+    }
+
     deferred_sense_key = NO_SENSE;
     deferred_asc = NO_ADDITIONAL_SENSE_INFORMATION;
 }
@@ -345,10 +352,14 @@ void Controller::Error(SenseKey sense_key, Asc asc, StatusCode status_code)
         return;
     }
 
-    auto device = GetDeviceForLun(GetEffectiveLun());
-    if (asc == LOGICAL_UNIT_NOT_SUPPORTED || !device) {
-        device = GetDeviceForLun(0);
-        assert(device);
+    const auto device = GetReportingDevice(asc);
+
+    // A controller always has LUN 0, unless it is being torn down while processing
+    assert(device);
+    if (!device) {
+        LogWarn("Cannot report error, controller has no LUN 0");
+        BusFree();
+        return;
     }
 
     if (sense_key != NO_SENSE || asc != NO_ADDITIONAL_SENSE_INFORMATION) {
@@ -716,24 +727,59 @@ void Controller::BusDeviceReset()
 
 void Controller::RaiseDeferredError(SenseKey s, Asc a)
 {
+    // Drop an older deferred error, including the sense data the device still holds for it
+    ResetDeferredSenseData();
+
+    // Resolved exactly like in Error(), so both refer to the same device
+    const auto device = GetReportingDevice(a);
+
     deferred_sense_key = s;
     deferred_asc = a;
+    deferred_lun = device ? device->GetLun() : 0;
+
     Error(s, a);
 }
 
 void Controller::ProvideSenseData()
 {
+    // Like in PrimaryDevice::RequestSense(), the descriptor format is not supported
+    if (static_cast<int>(GetCdb()[1]) & 0x01) {
+        ResetDeferredSenseData();
+        throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
+    }
+
+    const auto device = GetDeviceForLun(deferred_lun);
+    const auto level = device ? device->GetScsiLevel() : ScsiLevel::SCSI_2;
+
+    const int requested = GetCdb()[4];
+
     auto &buf = GetBuffer();
     fill_n(buf.begin(), 18, 0);
-    buf[0] = 0x70;
+    buf[0] = level >= ScsiLevel::SCSI_2 || requested > 4 ? 0x70 : 0x00;
     buf[2] = to_underlying(deferred_sense_key);
     buf[7] = 10;
     buf[12] = to_underlying(deferred_asc);
 
+    // The sense data is reported once. This also clears it in the device.
     ResetDeferredSenseData();
 
-    SetCurrentLength(min(18, static_cast<int>(GetCdb()[4])));
+    // Same rules as in PrimaryDevice
+    const int allocation_length = (!requested && level == ScsiLevel::SCSI_1_CCS) ? 4 : requested;
+
+    const int length = min(18, allocation_length);
+    SetCurrentLength(length);
+    SetTransferSize(length, length);
     DataIn();
+}
+
+shared_ptr<PrimaryDevice> Controller::GetReportingDevice(Asc asc) const
+{
+    auto device = GetDeviceForLun(GetEffectiveLun());
+    if (asc == LOGICAL_UNIT_NOT_SUPPORTED || !device) {
+        device = GetDeviceForLun(0);
+    }
+
+    return device;
 }
 
 int Controller::GetEffectiveLun() const

@@ -61,6 +61,9 @@ private:
     void RaiseDeferredError(SenseKey, Asc);
     void ProvideSenseData();
 
+    // The device that reports an error, which is the addressed LUN or LUN 0 if there is no such LUN
+    shared_ptr<PrimaryDevice> GetReportingDevice(Asc) const;
+
     Bus &bus;
 
     shared_ptr<ScriptGenerator> script_generator;
@@ -78,6 +81,8 @@ private:
     // This is required for SCSG because REQUEST SENSE is passed through to the actual device.
     SenseKey deferred_sense_key = NO_SENSE;
     Asc deferred_asc = NO_ADDITIONAL_SENSE_INFORMATION;
+    // The LUN of the device that holds the same sense data as the deferred sense data
+    int deferred_lun = 0;
 
     vector<uint8_t> msg_bytes;
 };
