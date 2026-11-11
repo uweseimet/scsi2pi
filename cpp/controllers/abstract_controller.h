@@ -117,7 +117,7 @@ public:
         return target_id;
     }
 
-    auto GetLunCount() const
+    size_t GetLunCount() const
     {
         return luns.size();
     }
@@ -133,7 +133,7 @@ public:
     {
         return buffer;
     }
-    auto GetStatus() const
+    StatusCode GetStatus() const
     {
         return status;
     }
@@ -141,21 +141,21 @@ public:
     {
         status = s;
     }
-    auto GetChunkSize() const
+    int GetChunkSize() const
     {
         return chunk_size;
     }
-    auto GetRemainingLength() const
+    int GetRemainingLength() const
     {
         return remaining_length;
     }
-    auto GetCurrentLength() const
+    int GetCurrentLength() const
     {
         return current_length;
     }
     void SetCurrentLength(int);
     void SetTransferSize(int, int);
-    auto& GetCdb() const
+    const auto& GetCdb() const
     {
         return cdb;
     }
@@ -179,7 +179,7 @@ protected:
         cdb[index] = value;
     }
 
-    auto GetOffset() const
+    int GetOffset() const
     {
         return offset;
     }

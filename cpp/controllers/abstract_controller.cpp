@@ -140,9 +140,9 @@ bool AbstractController::AddDevice(shared_ptr<PrimaryDevice> device)
         return false;
     }
 
-    luns.try_emplace(lun, device);
-
     device->SetController(this);
+
+    luns.try_emplace(lun, std::move(device));
 
     return true;
 }

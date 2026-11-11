@@ -383,7 +383,7 @@ void Controller::Send()
 
     if (const auto length = GetCurrentLength(); length) {
         assert(static_cast<size_t>(GetOffset() + length) <= GetBuffer().size());
-        const span<uint8_t> data(GetBuffer().data() + GetOffset(), length);
+        const span<const uint8_t> data(GetBuffer().data() + GetOffset(), length);
 
         if (IsDataIn() && GetLogger().should_log(level::trace)) {
             const string &bytes = FormatBytes(data, length);
