@@ -49,7 +49,7 @@ private:
     void Receive();
     void XferMsg();
     void TransferToHost();
-    bool TransferFromHost(int);
+    void TransferFromHost(int);
 
     void ParseMessage();
     void LogExtendedMessage(size_t) const;

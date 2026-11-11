@@ -61,7 +61,7 @@ CommandMetaData::CommandMetaData()
     AddCommand(RESERVE_RESERVE_ELEMENT_6, 6, "RESERVE(6)/RESERVE ELEMENT(6)", { 0, 0, 0, 0, false, false });
     AddCommand(RELEASE_RELEASE_ELEMENT_6, 6, "RELEASE(6)/RELEASE ELEMENT(6)", { 0, 0, 0, 0, false, false });
     AddCommand(ERASE_6, 6, "ERASE(6)", { 0, 0, 0, 0, false, false });
-    AddCommand(MODE_SENSE_6, 6, "MODE SENSE(6)", { 4, 1, 0, 0, false, true });
+    AddCommand(MODE_SENSE_6, 6, "MODE SENSE(6)", { 4, 1, 0, 0, false, false });
     AddCommand(START_STOP, 6, "START STOP UNIT/STOP PRINT", { 0, 0, 0, 0, false, false });
     AddCommand(SEND_DIAGNOSTIC, 6, "SEND DIAGNOSTIC", { 3, 2, 0, 0, false, false });
     AddCommand(PREVENT_ALLOW_MEDIUM_REMOVAL, 6, "PREVENT ALLOW MEDIUM REMOVAL", { 0, 0, 0, 0, false, false });
@@ -96,7 +96,7 @@ CommandMetaData::CommandMetaData()
     AddCommand(READ_DISC_INFORMATION, 10, "READ DISC INFORMATION", { 7, 2, 0, 0, false, false });
     AddCommand(READ_TRACK_INFORMATION, 10, "READ TRACK INFORMATION", { 7, 2, 0, 0, false, false });
     AddCommand(RESERVE_RESERVE_ELEMENT_10, 10, "RESERVE(10)/RESERVE ELEMENT(10)", { 7, 2, 0, 0, true, false });
-    AddCommand(MODE_SELECT_10, 10, "MODE SELECT(10)", { 7, 2, 0, 0, true, false });
+    AddCommand(MODE_SELECT_10, 10, "MODE SELECT(10)", { 7, 2, 0, 0, true, true });
     AddCommand(RELEASE_RELEASE_ELEMENT_10, 10, "RELEASE(10)/RELEASE ELEMENT(10)", { 7, 2, 0, 0, true, false });
     AddCommand(READ_MASTER_CUE, 10, "READ MASTER CUE", { 6, 3, 0, 0, false, false });
     AddCommand(MODE_SENSE_10, 10, "MODE SENSE(10)", { 7, 2, 0, 0, false, false });

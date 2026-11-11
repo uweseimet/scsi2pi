@@ -345,17 +345,19 @@ void Controller::Error(SenseKey sense_key, Asc asc, StatusCode status_code)
         return;
     }
 
-    int lun = GetEffectiveLun();
-    if (asc == LOGICAL_UNIT_NOT_SUPPORTED || !GetDeviceForLun(lun)) {
-        assert(GetDeviceForLun(0));
-        lun = 0;
+    auto device = GetDeviceForLun(GetEffectiveLun());
+    if (asc == LOGICAL_UNIT_NOT_SUPPORTED || !device) {
+        device = GetDeviceForLun(0);
+        assert(device);
     }
 
     if (sense_key != NO_SENSE || asc != NO_ADDITIONAL_SENSE_INFORMATION) {
-        LogDebug(fmt::runtime(FormatSenseData(sense_key, asc)));
+        if (GetLogger().should_log(level::debug)) {
+            LogDebug("{}", FormatSenseData(sense_key, asc));
+        }
 
         // Set Sense Key and ASC in the device for a subsequent REQUEST SENSE
-        GetDeviceForLun(lun)->SetStatus(sense_key, asc);
+        device->SetStatus(sense_key, asc);
     }
 
     SetStatus(status_code);
@@ -471,9 +473,7 @@ void Controller::Receive()
     // Processing after receiving data
     switch (GetPhase()) {
     case BusPhase::DATA_OUT:
-        if (!TransferFromHost(length)) {
-            return;
-        }
+        TransferFromHost(length);
         break;
 
     case BusPhase::MSG_OUT:
@@ -519,7 +519,7 @@ void Controller::TransferToHost()
     }
 }
 
-bool Controller::TransferFromHost(int length)
+void Controller::TransferFromHost(int length)
 {
     int transferred_length = length;
     const auto device = GetDeviceForLun(GetEffectiveLun());
@@ -537,8 +537,6 @@ bool Controller::TransferFromHost(int length)
     UpdateTransferLength(transferred_length);
     SetCurrentLength(GetChunkSize());
     ResetOffset();
-
-    return true;
 }
 
 void Controller::XferMsg()
