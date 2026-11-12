@@ -8,7 +8,7 @@
 
 #include "primary_device.h"
 #include <cassert>
-#include <spdlog/sinks/stdout_color_sinks.h>
+#include <cstring>
 #include "controllers/abstract_controller.h"
 #include "shared/command_meta_data.h"
 #include "shared/s2p_exceptions.h"
@@ -400,7 +400,8 @@ bool PrimaryDevice::CheckReservation(int initiator_id) const
 
     // A reservation is valid for all commands except those excluded below
     const auto cmd = static_cast<ScsiCommand>(GetCdbByte(0));
-    if (cmd == INQUIRY || cmd == REQUEST_SENSE || cmd == RELEASE_RELEASE_ELEMENT_6) {
+    if (cmd == INQUIRY || cmd == REQUEST_SENSE || cmd == RELEASE_RELEASE_ELEMENT_6 || cmd == RELEASE_RELEASE_ELEMENT_10
+        || cmd == REPORT_LUNS) {
         return true;
     }
 

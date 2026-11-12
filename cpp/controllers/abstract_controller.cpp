@@ -9,8 +9,6 @@
 #include "abstract_controller.h"
 #include <cassert>
 #include <bit>
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include "buses/bus.h"
 #include "devices/primary_device.h"
 #include "shared/logger_util.h"
 

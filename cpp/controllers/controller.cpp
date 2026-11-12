@@ -171,9 +171,14 @@ void Controller::Command()
             return;
         }
 
-        const auto control = GetCdb()[command_bytes_count - 1];
-        linked = (byte { control } & byte { 0x01 }) != byte { 0 };
-        flag = (byte { control } & byte { 0x02 }) != byte { 0 };
+        const auto control = byte { GetCdb()[command_bytes_count - 1] };
+        if ((control & byte { 0b11111100 }) != byte { 0 }) {
+            RaiseDeferredError(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
+            return;
+        }
+
+        linked = (control & byte { 0b00000001 }) != byte { 0 };
+        flag = (control & byte { 0b00000010 }) != byte { 0 };
 
         if (flag && !linked) {
             RaiseDeferredError(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
@@ -192,15 +197,14 @@ void Controller::Command()
 
 void Controller::Execute(ScsiCommand cmd)
 {
-    ResetDeferredSenseData();
-
     SetCurrentLength(0);
     ResetOffset();
     SetTransferSize(0, 0);
 
     auto device = GetDeviceForLun(GetEffectiveLun());
     if (!device) {
-        if (cmd != INQUIRY && cmd != REQUEST_SENSE) {
+        if (cmd != INQUIRY && cmd != REQUEST_SENSE && cmd != REPORT_LUNS) {
+            ResetDeferredSenseData();
             Error(ILLEGAL_REQUEST, LOGICAL_UNIT_NOT_SUPPORTED);
             return;
         }
@@ -219,6 +223,11 @@ void Controller::Execute(ScsiCommand cmd)
     // Discard pending sense data from the previous command if the current command is not REQUEST SENSE
     if (cmd != REQUEST_SENSE) {
         SetStatus(GOOD);
+    }
+
+    // Discard pending sense data only for commands that are not exempt.
+    if (cmd != INQUIRY && cmd != REQUEST_SENSE && cmd != REPORT_LUNS) {
+        ResetDeferredSenseData();
         device->ResetStatus();
     }
 
@@ -603,14 +612,11 @@ void Controller::ParseMessage()
                 BusDeviceReset();
                 return;
 
-            case 0x05:
-                // INITIATOR DETECTED ERROR
-            case 0x07:
-                // MESSAGE REJECT, never answer with MESSAGE REJECT
-            case 0x08:
-                // NO OPERATION
-            case 0x09:
-                // MESSAGE PARITY ERROR
+            case to_underlying(MessageCode::INITIATOR_DETECTED_ERROR):
+            case to_underlying(MessageCode::NO_OPERATION):
+            case to_underlying(MessageCode::MESSAGE_PARITY_ERROR):
+            case to_underlying(MessageCode::MESSAGE_REJECT):
+                // Never answer MESAGE REJECT with MESSAGE REJECT
                 break;
 
             default:

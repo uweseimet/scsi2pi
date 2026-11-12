@@ -162,8 +162,11 @@ enum class ScsiCommand : uint8_t
 enum class MessageCode : uint8_t
 {
     COMMAND_COMPLETE = 0x00,
+    INITIATOR_DETECTED_ERROR = 0x05,
     ABORT = 0x06,
     MESSAGE_REJECT = 0x07,
+    NO_OPERATION = 0x08,
+    MESSAGE_PARITY_ERROR = 0x09,
     LINKED_COMMAND_COMPLETE = 0x0a,
     LINKED_COMMAND_COMPLETE_WITH_FLAG = 0x0b,
     BUS_DEVICE_RESET = 0x0c,

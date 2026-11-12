@@ -147,9 +147,13 @@ TEST(PrimaryDeviceTest, CheckReservation)
     controller->SetCdbByte(0, to_underlying(INQUIRY));
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved for INQUIRY";
     controller->SetCdbByte(0, to_underlying(REQUEST_SENSE));
+    EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved for REPORT LUNS";
+    controller->SetCdbByte(0, to_underlying(REPORT_LUNS));
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved for REQUEST SENSE";
     controller->SetCdbByte(0, to_underlying(RELEASE_RELEASE_ELEMENT_6));
-    EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved for RELEASE (6)";
+    EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved for RELEASE(6)";
+    controller->SetCdbByte(0, to_underlying(RELEASE_RELEASE_ELEMENT_10));
+    EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved for RELEASE(10)";
 
     controller->SetCdbByte(0, to_underlying(PREVENT_ALLOW_MEDIUM_REMOVAL));
     EXPECT_TRUE(device->CheckReservation(1))
