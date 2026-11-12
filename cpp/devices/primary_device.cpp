@@ -406,7 +406,9 @@ bool PrimaryDevice::CheckReservation(int initiator_id) const
     // A reservation is valid for all commands except those excluded below
     const auto cmd = static_cast<ScsiCommand>(GetCdbByte(0));
     if (cmd == ScsiCommand::INQUIRY || cmd == ScsiCommand::REQUEST_SENSE
-        || cmd == ScsiCommand::RELEASE_RELEASE_ELEMENT_6) {
+        || cmd == ScsiCommand::RELEASE_RELEASE_ELEMENT_6
+        || cmd == ScsiCommand::RELEASE_RELEASE_ELEMENT_10
+        || cmd == ScsiCommand::REPORT_LUNS) {
         return true;
     }
 

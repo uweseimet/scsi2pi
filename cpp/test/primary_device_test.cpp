@@ -156,10 +156,14 @@ TEST(PrimaryDeviceTest, CheckReservation)
     EXPECT_FALSE(device->CheckReservation(-1)) << "Device must be reserved for unknown initiator";
     controller->SetCdbByte(0, static_cast<int>(ScsiCommand::INQUIRY));
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved for INQUIRY";
+    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::REPORT_LUNS));
+    EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved for REPORT LUNS";
     controller->SetCdbByte(0, static_cast<int>(ScsiCommand::REQUEST_SENSE));
     EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved for REQUEST SENSE";
     controller->SetCdbByte(0, static_cast<int>(ScsiCommand::RELEASE_RELEASE_ELEMENT_6));
-    EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved for RELEASE (6)";
+    EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved for RELEASE(6)";
+    controller->SetCdbByte(0, static_cast<int>(ScsiCommand::RELEASE_RELEASE_ELEMENT_10));
+    EXPECT_TRUE(device->CheckReservation(1)) << "Device must not be reserved for RELEASE(10)";
 
     controller->SetCdbByte(0, static_cast<int>(ScsiCommand::PREVENT_ALLOW_MEDIUM_REMOVAL));
     EXPECT_TRUE(device->CheckReservation(1))
