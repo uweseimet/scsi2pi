@@ -39,7 +39,7 @@ void Controller::Reset()
 void Controller::ResetFlags()
 {
     linked = false;
-    flag = false;
+    link_flag = false;
     atn_msg = false;
 }
 
@@ -178,9 +178,9 @@ void Controller::Command()
         }
 
         linked = (control & byte { 0b00000001 }) != byte { 0 };
-        flag = (control & byte { 0b00000010 }) != byte { 0 };
+        link_flag = (control & byte { 0b00000010 }) != byte { 0 };
 
-        if (flag && !linked) {
+        if (link_flag && !linked) {
             RaiseDeferredError(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
             return;
         }
@@ -244,7 +244,7 @@ void Controller::Status()
     // Any status other than GOOD or CONDITION MET ends a series of linked commands (SCSI-2 7.3.5)
     if (linked && GetStatus() != GOOD && GetStatus() != CONDITION_MET) {
         linked = false;
-        flag = false;
+        link_flag = false;
     }
 
     SetPhase(BusPhase::STATUS,
@@ -441,7 +441,7 @@ void Controller::Send()
         // Message byte
         if (linked) {
             GetBuffer()[0] = to_underlying(
-                flag ? MessageCode::LINKED_COMMAND_COMPLETE_WITH_FLAG : MessageCode::LINKED_COMMAND_COMPLETE);
+                link_flag ? MessageCode::LINKED_COMMAND_COMPLETE_WITH_FLAG : MessageCode::LINKED_COMMAND_COMPLETE);
         }
         else {
             GetBuffer()[0] = to_underlying(MessageCode::COMMAND_COMPLETE);

@@ -404,7 +404,7 @@ bool CommandExecutor::Detach(const CommandContext &context, PrimaryDevice &devic
         PropertyHandler::GetInstance().ConsumeProperties(fmt::format("{}{}.", PropertyHandler::DEVICE, id));
 
         // If no LUN is left also delete the controller
-        if (!controller->GetLunCount() && !controller_factory.DeleteController(*controller)) {
+        if (!controller->GetLunCount() && !controller_factory.DeleteController(controller)) {
             return context.ReturnLocalizedError(ERROR_DETACH);
         }
 

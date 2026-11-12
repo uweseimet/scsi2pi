@@ -26,7 +26,7 @@ class ControllerFactory final
 public:
 
     bool AttachToController(Bus&, int, shared_ptr<PrimaryDevice>);
-    bool DeleteController(const AbstractController&);
+    bool DeleteController(const AbstractController*);
     bool DeleteAllControllers();
     ShutdownMode ProcessOnController(uint8_t) const;
 

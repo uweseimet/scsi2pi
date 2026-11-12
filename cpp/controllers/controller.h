@@ -75,7 +75,7 @@ private:
 
     bool linked = false;
 
-    bool flag = false;
+    bool link_flag = false;
 
     // For the last error reported by the controller, the controller and not the device has to provide the sense data.
     // This is required for SCSG because REQUEST SENSE is passed through to the actual device.

@@ -36,7 +36,7 @@ TEST(ControllerFactoryTest, LifeCycle)
     EXPECT_TRUE(controller_factory.AttachToController(bus, ID1, device));
     ASSERT_NE(nullptr, device->GetController());
     EXPECT_EQ(2U, device->GetController()->GetLunCount());
-    EXPECT_TRUE(controller_factory.DeleteController(*device->GetController()));
+    EXPECT_TRUE(controller_factory.DeleteController(device->GetController()));
 
     const auto disk = make_shared<MockDisk>();
     EXPECT_TRUE(controller_factory.AttachToController(bus, ID2, disk));

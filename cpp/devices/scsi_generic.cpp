@@ -132,13 +132,18 @@ void ScsiGeneric::Dispatch(ScsiCommand cmd)
         deferred_sense_data_valid = false;
     }
 
+    RunTransfer(cmd, buf, meta_data.has_data_out);
+}
+
+void ScsiGeneric::RunTransfer(ScsiCommand cmd, span<uint8_t> buf, bool force_data_out)
+{
     // Split the transfer into chunks
     const int chunk_size = byte_count < MAX_TRANSFER_LENGTH ? byte_count : MAX_TRANSFER_LENGTH;
 
     GetController()->SetTransferSize(byte_count, chunk_size);
 
     // FORMAT UNIT needs special handling because of its implicit DATA OUT phase
-    if (meta_data.has_data_out) {
+    if (force_data_out) {
         DataOutPhase(chunk_size || cmd != FORMAT ? chunk_size : -1);
     }
     else {

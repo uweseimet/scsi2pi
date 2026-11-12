@@ -36,11 +36,11 @@ bool ControllerFactory::AttachToController(Bus &bus, int id, shared_ptr<PrimaryD
     return false;
 }
 
-bool ControllerFactory::DeleteController(const AbstractController &controller)
+bool ControllerFactory::DeleteController(const AbstractController *controller)
 {
-    controller.CleanUp();
+    controller->CleanUp();
 
-    return controllers.erase(controller.GetTargetId()) == 1;
+    return controllers.erase(controller->GetTargetId()) == 1;
 }
 
 bool ControllerFactory::DeleteAllControllers()

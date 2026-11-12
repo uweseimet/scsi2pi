@@ -43,6 +43,8 @@ public:
 
 private:
 
+    void RunTransfer(ScsiCommand, span<uint8_t>, bool);
+
     int ReadWriteData(span<uint8_t>);
 
     void Execute(const sg_io_hdr&, span<uint8_t>, span<const uint8_t>, bool);
