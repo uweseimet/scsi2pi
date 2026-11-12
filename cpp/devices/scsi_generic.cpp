@@ -97,7 +97,14 @@ void ScsiGeneric::Dispatch(ScsiCommand cmd)
     remaining_count = byte_count;
 
     // There is no explicit LUN support, the SG driver maps each LUN to a device file
-    if (GetController()->GetEffectiveLun() && cmd != INQUIRY) {
+    const int effective_lun = GetController()->GetEffectiveLun();
+    if (effective_lun && cmd == REQUEST_SENSE) {
+        // Non-existing LUN, answered like for any other device (SCSI-2 8.2.5.1), not by the drive
+        PrimaryDevice::Dispatch(cmd);
+        return;
+    }
+
+    if (effective_lun && cmd != INQUIRY && cmd != REPORT_LUNS) {
         throw ScsiException(ILLEGAL_REQUEST, LOGICAL_UNIT_NOT_SUPPORTED);
     }
 
@@ -116,7 +123,14 @@ void ScsiGeneric::Dispatch(ScsiCommand cmd)
         return;
     }
 
-    deferred_sense_data_valid = false;
+    if (cmd == REQUEST_SENSE && (GetSenseKey() != NO_SENSE || GetAsc() != NO_ADDITIONAL_SENSE_INFORMATION)) {
+        PrimaryDevice::Dispatch(cmd);
+        return;
+    }
+
+    if (cmd != INQUIRY && cmd != REPORT_LUNS) {
+        deferred_sense_data_valid = false;
+    }
 
     // Split the transfer into chunks
     const int chunk_size = byte_count < MAX_TRANSFER_LENGTH ? byte_count : MAX_TRANSFER_LENGTH;
