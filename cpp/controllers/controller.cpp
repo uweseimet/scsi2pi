@@ -155,8 +155,13 @@ void Controller::Command()
         }
 
         const auto control = GetCdb()[command_bytes_count - 1];
-        linked = control & 0x01;
-        flag = control & 0x02;
+        if(control & 0b11111100) {
+            RaiseDeferredError(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
+            return;
+        }
+
+        linked = control & 0b00000001;
+        flag = control & 0b00000010;
 
         if (flag && !linked) {
             RaiseDeferredError(SenseKey::ILLEGAL_REQUEST, Asc::INVALID_FIELD_IN_CDB);
