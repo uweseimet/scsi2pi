@@ -234,7 +234,7 @@ void PrimaryDevice::Inquiry()
     // Report if the device does not support the requested LUN
     if (!controller->GetDeviceForLun(controller->GetEffectiveLun())) {
         // SCSI-2 section 8.2.5.1: Incorrect logical unit handling
-        controller->GetBuffer().data()[0] = 0x7f;
+        controller->GetBuffer()[0] = 0x7f;
     }
 
     DataInPhase(allocation_length);
@@ -267,30 +267,20 @@ void PrimaryDevice::ReportLuns() const
 
 void PrimaryDevice::RequestSense()
 {
+    // Controller::Execute() ensures that, if required, this is LUN 0
+
     // The descriptor format is not supported
     if (GetCdbByte(1) & 0x01) {
         throw ScsiException(ILLEGAL_REQUEST, INVALID_FIELD_IN_CDB);
     }
 
-    int effective_lun = controller->GetEffectiveLun();
-
-    // According to the specification. REQUEST SENSE for non-existing LUNs does not report CHECK CONDITION.
-    // Only the Sense Key and ASC are set to signal the non-existing LUN.
-    if (!controller->GetDeviceForLun(effective_lun)) {
-        auto lun0 = controller->GetDeviceForLun(0);
-        if (!lun0) {
-            throw ScsiException(ABORTED_COMMAND, INTERNAL_TARGET_FAILURE);
-        }
-
-        effective_lun = 0;
-
-        // Do not call Error(), because this would switch to the STATUS phase and skip the DATA IN phase
-        lun0->SetStatus(ILLEGAL_REQUEST, LOGICAL_UNIT_NOT_SUPPORTED);
-        // When signalling an invalid LUN, the status must be GOOD
+    if (!controller->GetDeviceForLun(controller->GetEffectiveLun())) {
+        // Sense Key and ASC signal the non-existing LUN, the status must be GOOD
+        SetStatus(ILLEGAL_REQUEST, LOGICAL_UNIT_NOT_SUPPORTED);
         controller->SetStatus(GOOD);
     }
 
-    const vector<byte> &buf = controller->GetDeviceForLun(effective_lun)->HandleRequestSense();
+    const auto buf = HandleRequestSense();
 
     int allocation_length = GetCdbByte(4);
     if (!allocation_length && level == ScsiLevel::SCSI_1_CCS) {
