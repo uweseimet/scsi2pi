@@ -277,7 +277,8 @@ void ScsiGeneric::UpdateInternalBlockSize(span<uint8_t> buf, int length)
     if (const auto cmd = static_cast<ScsiCommand>(local_cdb[0]); cmd == ScsiCommand::READ_CAPACITY_10 && length >= 8) {
         size = GetInt32(buf, 4);
     }
-    else if (cmd == ScsiCommand::READ_CAPACITY_READ_LONG_16 && (static_cast<int>(local_cdb[1]) & 0x10) && length >= 12) {
+    else if (cmd == ScsiCommand::READ_CAPACITY_READ_LONG_16 && ((byte { local_cdb[1] } & byte { 0x1f }) == byte { 0x10 })
+        && length >= 12) {
         size = GetInt32(buf, 8);
     }
 

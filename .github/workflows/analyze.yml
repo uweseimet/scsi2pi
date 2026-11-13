@@ -1,4 +1,3 @@
-
 name: Run code analysis
 
 on:
@@ -21,7 +20,7 @@ jobs:
       SONAR_SERVER_URL: "https://sonarcloud.io"
       SONAR_PROJECT_KEY: "uweseimet_scsi2pi"
       SONAR_ORGANIZATION: "uweseimet-org"
-      SONAR_SCANNER_VERSION: 8.1.0.6389
+      SONAR_SCANNER_VERSION: 8.4.0.16527
       APT_PACKAGES: protobuf-compiler libspdlog-dev libgmock-dev bear
 
     steps:
@@ -39,7 +38,7 @@ jobs:
         run: |
           mkdir -p $HOME/.sonar
           curl -fsSLo /tmp/scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux-x64.zip
-          unzip -o /tmp/scanner.zip -d $HOME/.sonar/
+          unzip -q -o /tmp/scanner.zip -d $HOME/.sonar/
 
       - name: Compile with coverage data
         run: bear -- make -j $(nproc) DEBUG=1 coverage
@@ -62,5 +61,6 @@ jobs:
             --define sonar.c.file.suffixes= \
             --define sonar.cpp.file.suffixes=.cpp,.h \
             --define sonar.branch.name=${{ inputs.branch }} \
-            --define sonar.cpd.exclusions="s2pdump/sg_executor.h" \
+            --define sonar.cpd.exclusions=**/board_executor.h,**/sg_executor.h \
+            --define sonar.coverage.exclusions=s2pdump/**,s2pexec/**,s2pformat/**,s2pproto/**,s2psimh/**,s2ptool/** \
             --define sonar.test.inclusions=test/**

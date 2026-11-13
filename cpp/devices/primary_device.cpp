@@ -279,14 +279,18 @@ void PrimaryDevice::RequestSense()
     // According to the specification. REQUEST SENSE for non-existing LUNs does not report CHECK CONDITION.
     // Only the Sense Key and ASC are set to signal the non-existing LUN.
     if (!controller->GetDeviceForLun(effective_lun)) {
-        if (!controller->GetDeviceForLun(0)) {
+        auto lun0 = controller->GetDeviceForLun(0);
+        if (!lun0) {
             throw ScsiException(SenseKey::ABORTED_COMMAND, Asc::INTERNAL_TARGET_FAILURE);
         }
 
         effective_lun = 0;
 
+
+        // Do not call Error(), because this would switch to the STATUS phase and skip the DATA IN phase
+        lun0->SetStatus(SenseKey::ILLEGAL_REQUEST, Asc::LOGICAL_UNIT_NOT_SUPPORTED);
         // When signalling an invalid LUN, the status must be GOOD
-        controller->Error(SenseKey::ILLEGAL_REQUEST, Asc::LOGICAL_UNIT_NOT_SUPPORTED, StatusCode::GOOD);
+        controller->SetStatus(StatusCode::GOOD);
     }
 
     const vector<byte> &buf = controller->GetDeviceForLun(effective_lun)->HandleRequestSense();
@@ -402,7 +406,9 @@ bool PrimaryDevice::CheckReservation(int initiator_id) const
     // A reservation is valid for all commands except those excluded below
     const auto cmd = static_cast<ScsiCommand>(GetCdbByte(0));
     if (cmd == ScsiCommand::INQUIRY || cmd == ScsiCommand::REQUEST_SENSE
-        || cmd == ScsiCommand::RELEASE_RELEASE_ELEMENT_6) {
+        || cmd == ScsiCommand::RELEASE_RELEASE_ELEMENT_6
+        || cmd == ScsiCommand::RELEASE_RELEASE_ELEMENT_10
+        || cmd == ScsiCommand::REPORT_LUNS) {
         return true;
     }
 
