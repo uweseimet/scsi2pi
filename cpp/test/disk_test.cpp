@@ -245,7 +245,7 @@ TEST(DiskTest, ReadFormatCapacities)
     EXPECT_EQ(8U, GetInt32(buf, 0));
     EXPECT_EQ(disk->GetBlockCount(), GetInt32(buf, 4));
     EXPECT_EQ(0x02U, buf[8]);
-    EXPECT_EQ(disk->GetBlockSize(), GetInt24(buf, 9));
+    EXPECT_EQ(disk->GetBlockSize(), static_cast<uint32_t>(GetInt24(buf, 9)));
 }
 
 TEST(DiskTest, Read6)
