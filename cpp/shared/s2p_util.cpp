@@ -39,7 +39,7 @@ tuple<int, int, string> GetPwData()
 {
 #if __has_include(<pwd.h>)
     const char *sudo_user = getenv("SUDO_UID");
-    const int uid = sudo_user ? stoi(sudo_user) : s2p_util::GetEuid();
+    const int uid = sudo_user ? stoi(sudo_user) : getuid();
 
     if (array<char, 256> pwbuf; uid != -1) {
         passwd pwd = { };
