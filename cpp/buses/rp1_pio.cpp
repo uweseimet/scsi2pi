@@ -50,9 +50,6 @@ constexpr auto HANDSHAKE_TIMEOUT = chrono::seconds(1);
 // 31 delay cycles per instruction at 200 MHz, i.e. 6 x 32 cycles (~1 us) between setting the data and REQ
 constexpr uint16_t SETTLE_DELAY = 31 << 8;
 
-// 31 delay cycles (155 ns) between ACK and sampling the data pins, because some data lines settle later than ACK
-constexpr uint16_t SAMPLE_DELAY = 31 << 8;
-
 // pull; out pindirs, 9 (assert the data and parity bits); settle; set pindirs, 1 (assert REQ);
 // wait 0 gpio ACK; set pindirs, 0 (release REQ); wait 1 gpio ACK
 // loaded directly behind the receive program
@@ -60,11 +57,14 @@ constexpr array<uint16_t, 11> TARGET_SEND_PROGRAM = { 0x80a0, 0x6089 | SETTLE_DE
     | SETTLE_DELAY, 0xa042 | SETTLE_DELAY, 0xa042 | SETTLE_DELAY, 0xa042 | SETTLE_DELAY, 0xe081, 0x2000 | PIN_ACK,
     0xe080, 0x2080 | PIN_ACK };
 
+// 31 delay cycles (155 ns) between ACK and sampling the data pins, because some data lines settle later than ACK
+constexpr uint16_t SAMPLE_DELAY = 31 << 8;
+
 // pull (the byte count - 1); mov x, osr; loop: set pindirs, 1 (assert REQ); wait 0 gpio ACK; in pins, 8 (4 bytes per
 // FIFO word); set pindirs, 0 (release REQ); wait 1 gpio ACK; jmp x--, loop.
 // Loaded at offset 0 because of the absolute jump target. Stalls at "pull" when done.
-constexpr array<uint16_t, 8> TARGET_RECEIVE_PROGRAM = { 0x80a0, 0xa027, 0xe081, 0x2000 | PIN_ACK, 0x4008 | (7 << 8), 0xe080,
-    0x2080 | PIN_ACK, 0x0042 };
+constexpr array<uint16_t, 8> TARGET_RECEIVE_PROGRAM = { 0x80a0, 0xa027, 0xe081, 0x2000 | PIN_ACK | SAMPLE_DELAY, 0x4008 | (7 << 8),
+    0xe080, 0x2080 | PIN_ACK, 0x0042 };
 
 constexpr uint16_t TARGET_SEND_ORIGIN = TARGET_RECEIVE_PROGRAM.size();
 
@@ -163,6 +163,13 @@ constexpr uint32_t SET_COUNT_LSB = 26;
 constexpr uint32_t SET_PIN_REQ = PIN_REQ << SET_BASE_LSB | 1U << SET_COUNT_LSB;
 constexpr uint32_t SET_PIN_ACK = PIN_ACK << SET_BASE_LSB | 1U << SET_COUNT_LSB;
 
+}
+
+Rp1Pio::~Rp1Pio()
+{
+    if (fd != -1) {
+        close(fd);
+    }
 }
 
 string Rp1Pio::Init(span<volatile uint32_t> g, bool t)
@@ -479,6 +486,8 @@ void Rp1Pio::Abort(uint16_t dir)
 
 #else
 
+Rp1Pio::~Rp1Pio() = default;
+
 string Rp1Pio::Init(span<volatile uint32_t>, bool) // NOSONAR Cannot be const in order to be compatible with the PIO implementation
 {
     return "This build does not support the RP1 PIO";
@@ -505,10 +514,3 @@ int Rp1Pio::InitiatorReceive(data_in_t) // NOSONAR Cannot be const in order to b
 }
 
 #endif
-
-Rp1Pio::~Rp1Pio()
-{
-    if (fd != -1) {
-        close(fd);
-    }
-}
