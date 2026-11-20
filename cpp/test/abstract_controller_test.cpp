@@ -106,10 +106,10 @@ TEST(AbstractControllerTest, DeviceLunLifeCycle)
     EXPECT_FALSE(controller.AddDevice(make_shared<MockPrimaryDevice>(32)));
     EXPECT_FALSE(controller.AddDevice(make_shared<MockPrimaryDevice>(-1)));
     EXPECT_GT(controller.GetLunCount(), 0U);
-    EXPECT_NE(nullptr, controller.GetDeviceForLun(LUN));
-    EXPECT_EQ(nullptr, controller.GetDeviceForLun(0));
+    EXPECT_NE(controller.GetDeviceForLun(LUN), nullptr);
+    EXPECT_EQ(controller.GetDeviceForLun(0), nullptr);
     EXPECT_TRUE(controller.RemoveDevice(*device));
-    EXPECT_EQ(nullptr, device->GetController());
+    EXPECT_EQ(device->GetController(), nullptr);
     EXPECT_EQ(0U, controller.GetLunCount());
     EXPECT_FALSE(controller.RemoveDevice(*device));
 }

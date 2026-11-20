@@ -27,14 +27,14 @@ TEST(ControllerFactoryTest, LifeCycle)
 
     device = device_factory.CreateDevice(SCHS, LUN1, "");
     EXPECT_TRUE(controller_factory.AttachToController(bus, ID1, device));
-    ASSERT_NE(nullptr, device->GetController());
+    EXPECT_NE(device->GetController(), nullptr);
     EXPECT_EQ(1U, device->GetController()->GetLunCount());
-    EXPECT_NE(nullptr, controller_factory.GetDeviceForIdAndLun(ID1, LUN1));
-    EXPECT_EQ(nullptr, controller_factory.GetDeviceForIdAndLun(0, 0));
+    EXPECT_NE(controller_factory.GetDeviceForIdAndLun(ID1, LUN1), nullptr);
+    EXPECT_EQ(controller_factory.GetDeviceForIdAndLun(0, 0), nullptr);
 
     device = device_factory.CreateDevice(SCHS, LUN2, "");
     EXPECT_TRUE(controller_factory.AttachToController(bus, ID1, device));
-    ASSERT_NE(nullptr, device->GetController());
+    EXPECT_NE(device->GetController(), nullptr);
     EXPECT_EQ(2U, device->GetController()->GetLunCount());
     EXPECT_TRUE(controller_factory.DeleteController(ID1));
 
@@ -42,8 +42,8 @@ TEST(ControllerFactoryTest, LifeCycle)
     EXPECT_TRUE(controller_factory.AttachToController(bus, ID2, disk));
     EXPECT_CALL(*disk, FlushCache);
     controller_factory.DeleteAllControllers();
-    EXPECT_EQ(nullptr, controller_factory.GetDeviceForIdAndLun(ID1, LUN1));
-    EXPECT_EQ(nullptr, controller_factory.GetDeviceForIdAndLun(ID2, LUN1));
+    EXPECT_EQ(controller_factory.GetDeviceForIdAndLun(ID1, LUN1), nullptr);
+    EXPECT_EQ(controller_factory.GetDeviceForIdAndLun(ID2, LUN1), nullptr);
 }
 
 TEST(ControllerFactoryTest, AttachToController)

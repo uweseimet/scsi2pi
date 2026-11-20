@@ -166,7 +166,7 @@ TEST(CommandExecutorTest, ProcessCmd)
     device2->set_unit(1);
     CommandContext context_attach2(command_attach2, *default_logger());
     EXPECT_FALSE(executor.ProcessCmd(context_attach2)) << "LUN 0 is missing";
-    EXPECT_EQ(nullptr, controller_factory.GetDeviceForIdAndLun(0, 1));
+    EXPECT_EQ(controller_factory.GetDeviceForIdAndLun(0, 1), nullptr);
 
     PbCommand command_attach3;
     command_attach3.set_operation(ATTACH);
@@ -176,7 +176,7 @@ TEST(CommandExecutorTest, ProcessCmd)
     device3->set_unit(0);
     CommandContext context_attach3(command_attach3, *default_logger());
     EXPECT_TRUE(executor.ProcessCmd(context_attach3));
-    EXPECT_NE(nullptr, controller_factory.GetDeviceForIdAndLun(0, 0));
+    EXPECT_NE(controller_factory.GetDeviceForIdAndLun(0, 0), nullptr);
 }
 
 TEST(CommandExecutorTest, Attach)
@@ -363,7 +363,7 @@ TEST(CommandExecutorTest, DetachAll)
 
     const auto device = DeviceFactory::GetInstance().CreateDevice(SCHS, 0, "");
     EXPECT_TRUE(controller_factory.AttachToController(bus, ID, device));
-    EXPECT_NE(nullptr, device->GetController());
+    EXPECT_NE(device->GetController(), nullptr);
     EXPECT_FALSE(controller_factory.GetAllDevices().empty());
 
     executor.ProcessCmd(context);
@@ -454,17 +454,17 @@ TEST(CommandExecutorTest, CreateDevice)
     CommandContext context(command, *default_logger());
 
     device.set_type(UNDEFINED);
-    EXPECT_EQ(nullptr, executor.CreateDevice(context, device));
+    EXPECT_EQ(executor.CreateDevice(context, device), nullptr);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     device.set_type(SCBR);
-    EXPECT_EQ(nullptr, executor.CreateDevice(context, device));
+    EXPECT_EQ(executor.CreateDevice(context, device), nullptr);
 #pragma GCC diagnostic pop
     device.set_type(SCHS);
-    EXPECT_NE(nullptr, executor.CreateDevice(context, device));
+    EXPECT_NE(executor.CreateDevice(context, device), nullptr);
     device.set_type(UNDEFINED);
     SetParam(device, "file", "services");
-    EXPECT_NE(nullptr, executor.CreateDevice(context, device));
+    EXPECT_NE(executor.CreateDevice(context, device), nullptr);
 }
 
 TEST(CommandExecutorTest, SetBlockSize)

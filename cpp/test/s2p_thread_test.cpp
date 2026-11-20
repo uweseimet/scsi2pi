@@ -15,7 +15,7 @@ TEST(S2pThreadTest, Init)
 {
     S2pThread service_thread;
 
-    EXPECT_TRUE(service_thread.Init(9999, nullptr,default_logger()).empty())
+    EXPECT_TRUE(service_thread.Init(9999, nullptr, default_logger()).empty())
         << "Port 9999 is expected not to be in use for this test";
     service_thread.Stop();
 }

@@ -24,7 +24,7 @@ static void CheckPosition(PrimaryDevice &tape, uint32_t position)
 static void CheckPositions(PrimaryDevice &tape, uint32_t position, uint32_t object_location)
 {
     auto *c = dynamic_cast<MockAbstractController*>(tape.GetController());
-    EXPECT_NE(nullptr, c);
+    EXPECT_NE(c, nullptr);
     c->ResetCdb();
     c->SetCdbByte(1, 0x01);
     CheckPosition(tape, position);

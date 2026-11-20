@@ -14,6 +14,6 @@ using namespace logger_util;
 TEST(LoggerUtilTest, CreateLogger)
 {
     const auto l = CreateLogger("test");
-    EXPECT_NE(nullptr, l);
+    EXPECT_NE(l, nullptr);
     EXPECT_EQ(l, CreateLogger("test"));
 }

@@ -27,7 +27,7 @@ TEST(DeviceFactoryTest, CreateDevice)
     EXPECT_EQ(SCTP, factory.CreateDevice(SCTP, 0, "")->GetType());
     EXPECT_EQ(SAHD, factory.CreateDevice(SAHD, 0, "")->GetType());
 
-    EXPECT_EQ(nullptr, factory.CreateDevice(UNDEFINED, 0, ""));
+    EXPECT_EQ(factory.CreateDevice(UNDEFINED, 0, ""), nullptr);
 }
 
 TEST(DeviceFactoryTest, GetTypeForFile)

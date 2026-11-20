@@ -104,7 +104,7 @@ void TestShared::TestRemovableDrive(PbDeviceType type, const string &filename, c
 {
     const auto device = DeviceFactory::GetInstance().CreateDevice(type, 0, filename);
 
-    EXPECT_NE(nullptr, device);
+    EXPECT_NE(device, nullptr);
     EXPECT_EQ(type, device->GetType());
     EXPECT_TRUE(device->SupportsFile());
     EXPECT_FALSE(device->SupportsParams());
@@ -204,7 +204,7 @@ void SetUpProperties(string_view properties1, string_view properties2, const pro
     string filenames = filename1.string();
     auto result = write(fd1, properties1.data(), properties1.size());
     close(fd1);
-    EXPECT_EQ(result, properties1.size());
+    EXPECT_EQ(static_cast<size_t>(result), properties1.size());
 
     if (!properties2.empty()) {
         const auto& [fd2, filename2] = OpenTempFile();
@@ -212,7 +212,7 @@ void SetUpProperties(string_view properties1, string_view properties2, const pro
         filenames += filename2.string();
         result = write(fd2, properties2.data(), properties2.size());
         close(fd2);
-        EXPECT_EQ(result, properties2.size());
+        EXPECT_EQ(static_cast<size_t>(result), properties2.size());
     }
 
     PropertyHandler::GetInstance().Init(filenames, cmd_properties, true);

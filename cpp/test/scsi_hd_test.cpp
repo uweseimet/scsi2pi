@@ -52,7 +52,7 @@ static void ValidateDrivePage(const AbstractController &controller, int offset)
 TEST(ScsiHdTest, SCHD_DeviceDefaults)
 {
     auto hd = DeviceFactory::GetInstance().CreateDevice(UNDEFINED, 0, "test.hda");
-    EXPECT_NE(nullptr, hd);
+    EXPECT_NE(hd, nullptr);
     EXPECT_EQ(SCHD, hd->GetType());
     EXPECT_TRUE(hd->SupportsFile());
     EXPECT_FALSE(hd->SupportsParams());
@@ -71,7 +71,7 @@ TEST(ScsiHdTest, SCHD_DeviceDefaults)
     EXPECT_EQ(TestShared::GetVersion(), revision);
 
     hd = DeviceFactory::GetInstance().CreateDevice(UNDEFINED, 0, "test.hds");
-    EXPECT_NE(nullptr, hd);
+    EXPECT_NE(hd, nullptr);
     EXPECT_EQ(SCHD, hd->GetType());
 }
 

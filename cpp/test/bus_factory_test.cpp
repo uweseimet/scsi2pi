@@ -11,8 +11,7 @@
 
 TEST(BusFactoryTest, CreateBus)
 {
-    EXPECT_NE(nullptr,
-        BusFactory::GetInstance().CreateBus( { .standard_board = false, .target_mode = true, .enable_irqs = false,
-            .software_handshake = true }, ""));
-    EXPECT_NE(nullptr, BusFactory::GetInstance().CreateBus( { }, ""));
+    EXPECT_NE(BusFactory::GetInstance().CreateBus( { .standard_board = false, .target_mode = true, .enable_irqs = false,
+        .software_handshake = true }, ""), nullptr);
+    EXPECT_NE(BusFactory::GetInstance().CreateBus( { }, ""), nullptr);
 }
