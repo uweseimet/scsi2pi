@@ -142,7 +142,7 @@ void s2p_parser::Banner(bool usage)
             << "  --connect-type/-C              The board type, either STANDARD or FULLSPEC.\n"
             << "                                 Default is FULLSPEC.\n"
             << "  --enable-irqs/-e               Do not disable IRQs during transfers\n"
-            << "                                 (Pi < Pi5 only)."
+            << "                                 (Pi < Pi5 only).\n"
             << "  --excluded-types/-x TYPES      Do not report the listed device types in the\n"
             << "                                 API (for old PiSCSI web UI compatibility).\n"
             << "  --help/-h                      Display this help.\n"
